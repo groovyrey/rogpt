@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, type Tool } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { cachedDataStore } from "../datastore/store";
 
@@ -11,7 +11,7 @@ const MAX_HISTORY = 10; // 10 exchanges = 20 messages
 // ---------------------------------------------------------
 // TOOL DEFINITIONS
 // ---------------------------------------------------------
-const tools = [
+const tools: Tool[] = [
   {
     functionDeclarations: [
       {

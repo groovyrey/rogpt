@@ -10,7 +10,7 @@ export default function Home() {
   }>({
     roblox: "loading",
     gemma: "loading",
-    lastUpdate: new Date().toLocaleTimeString(),
+    lastUpdate: "",
   });
 
   const checkStatus = async () => {
@@ -19,12 +19,9 @@ export default function Home() {
       const robloxRes = await fetch("/api/roblox");
       const robloxData = await robloxRes.json();
       
-      // Check Gemma API Endpoint (simple GET check if implemented, or just assume online if roblox is)
-      // Since we only have POST for Gemma, we'll base it on the general API health
-      
       setStatus({
         roblox: robloxData.status === "online" ? "online" : "offline",
-        gemma: "online", // Assuming online if API is reachable
+        gemma: "online", 
         lastUpdate: new Date().toLocaleTimeString(),
       });
     } catch (error) {
@@ -37,8 +34,10 @@ export default function Home() {
   };
 
   useEffect(() => {
+    // Set initial time only on client mount to avoid hydration mismatch
+    setStatus(prev => ({ ...prev, lastUpdate: new Date().toLocaleTimeString() }));
     checkStatus();
-    const interval = setInterval(checkStatus, 30000); // Check every 30s
+    const interval = setInterval(checkStatus, 30000); 
     return () => clearInterval(interval);
   }, []);
 

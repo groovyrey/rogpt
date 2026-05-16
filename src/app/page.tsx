@@ -110,7 +110,7 @@ export default function Home() {
                   <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold shrink-0">1</div>
                   <div>
                     <h4 className="font-semibold text-slate-200">Start the Server</h4>
-                    <p className="text-sm text-slate-400 mt-1">Ensure your Next.js project is running on localhost:3000 during development.</p>
+                    <p className="text-sm text-slate-400 mt-1">Roblox is configured to call https://rogpt-server.vercel.app in production.</p>
                   </div>
                 </div>
                 <div className="flex gap-4 p-4 bg-slate-950 rounded-xl border border-slate-800">
@@ -124,7 +124,7 @@ export default function Home() {
                   <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold shrink-0">3</div>
                   <div>
                     <h4 className="font-semibold text-slate-200">Test the Chat</h4>
-                    <p className="text-sm text-slate-400 mt-1">Use `!ask Hello` in the in-game chat to talk to Gemma.</p>
+                    <p className="text-sm text-slate-400 mt-1">Use `/ask Hello` privately, or enable Public Ask in the companion hub and use `!ask Hello` in chat.</p>
                   </div>
                 </div>
               </div>

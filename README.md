@@ -20,6 +20,36 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Connecting to Roblox
+
+This server includes an API endpoint at `/api/roblox` designed to handle requests from Roblox's `HttpService`.
+
+### Roblox Implementation Example
+
+In your Roblox script (Server-Side):
+
+```lua
+local HttpService = game:GetService("HttpService")
+local url = "https://your-deployed-server-url.com/api/roblox"
+
+local data = {
+    message = "Hello from Roblox!",
+    timestamp = os.time()
+}
+
+local payload = HttpService:JSONEncode(data)
+
+local success, response = pcall(function()
+    return HttpService:PostAsync(url, payload, Enum.HttpContentType.ApplicationJson)
+end)
+
+if success then
+    print("Response from server:", response)
+else
+    warn("Failed to connect to server:", response)
+end
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

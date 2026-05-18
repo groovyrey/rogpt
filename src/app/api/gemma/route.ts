@@ -1,12 +1,17 @@
 import { GoogleGenerativeAI, SchemaType, type Tool } from "@google/generative-ai";
 import { NextResponse } from "next/server";
-import { cachedDataStore } from "../datastore/store";
+import { Redis } from "@upstash/redis";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-// In-memory store for non-player sessions
-const globalChatSessions: Record<string, any[]> = {};
-const MAX_HISTORY = 10; // 10 exchanges = 20 messages
+// Upstash Redis Setup
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || "",
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || "",
+});
+
+const MAX_HISTORY = 5; // Reduced from 10 for faster response speed
+const SESSION_TTL = 3600; // 1 hour session expiry
 
 // ---------------------------------------------------------
 // TOOL DEFINITIONS
@@ -53,6 +58,7 @@ export async function POST(req: Request) {
     const sessionId = body.sessionId;
     const companionName = body.companionName;
     const ownerName = body.ownerName;
+    const gameState = body.gameState; // New: optional game state object
     // Default to true if not provided (Roblox), but allow explicit false (Test Page)
     const minimal = body.minimal !== undefined ? body.minimal : true;
 
@@ -77,26 +83,41 @@ export async function POST(req: Request) {
     const modelName = "gemma-4-26b-a4b-it";
     
     // ---------------------------------------------------------
-    // IDENTIFY PLAYER / COMPANION
+    // IDENTIFY PLAYER / COMPANION / GAME STATE
     // ---------------------------------------------------------
-    let isCompanionDataStore = false;
-    let companionKey = "";
     let memoriesContext = "";
     let emotesContext = "";
+    let environmentContext = "";
+    
+    // Redis Keys
+    const sessionKey = `chat_session:${sessionId || "global"}`;
+    const playerKey = sessionId?.startsWith("NPC_Chat_") 
+      ? `player_data:${sessionId.replace("NPC_Chat_", "")}` 
+      : null;
 
-    if (sessionId && sessionId.startsWith("NPC_Chat_")) {
-      const userId = sessionId.replace("NPC_Chat_", "");
-      companionKey = `Companion_${userId}`; // Using the new dedicated Companion DataStore key
-      const companionData = cachedDataStore[companionKey];
+    // Fetch Player Memories from Redis
+    let playerMemories: string[] = [];
+    if (playerKey) {
+      const storedData: any = await redis.get(playerKey);
+      if (storedData) {
+        playerMemories = storedData.memories || [];
+        if (playerMemories.length > 0) {
+          memoriesContext = "\nPLAYER MEMORIES:\n" + playerMemories.join("\n");
+        }
+      }
+    }
 
-      if (companionData) {
-        isCompanionDataStore = true;
-        if (companionData.memories && companionData.memories.length > 0) {
-          memoriesContext = "\nPLAYER MEMORIES:\n" + companionData.memories.join("\n");
-        }
-        if (companionData.emotes && companionData.emotes.length > 0) {
-          emotesContext = "\nAVAILABLE EMOTES:\n" + companionData.emotes.map((e: any) => `${e.name}: ${e.id}`).join("\n");
-        }
+    // Process Game State (Players, Time, etc.)
+    if (gameState) {
+      const { playerCount, players, location, timeOfDay, availableEmotes } = gameState;
+      environmentContext = "\nCURRENT GAME STATE:\n";
+      if (playerCount !== undefined) environmentContext += `- Total Players: ${playerCount}\n`;
+      if (players && Array.isArray(players)) environmentContext += `- Players Online: ${players.join(", ")}\n`;
+      if (location) environmentContext += `- Current Location: ${location}\n`;
+      if (timeOfDay) environmentContext += `- Time of Day: ${timeOfDay}\n`;
+      
+      if (availableEmotes && Array.isArray(availableEmotes)) {
+        emotesContext = "\nAVAILABLE EMOTES:\n" + availableEmotes.map((e: any) => `${e.name}: ${e.id}`).join("\n");
       }
     }
 
@@ -108,18 +129,16 @@ export async function POST(req: Request) {
       // Official Gemma 4 Thinking Mode trigger
       systemInstruction: `<|think|>
 STRICT REASONING PROTOCOL:
-1. Your reasoning will be captured in a thought channel.
-2. Everything outside the thought channel MUST be the final, user-facing answer in PLAIN TEXT. Do not use Markdown formatting.
+1. Use the thought channel for brief internal logic.
+2. Final answer MUST be CONCISE, PLAIN TEXT, and no Markdown.
 
 PERSONA:
-You are an intelligent NPC in a Roblox game.${nameContext}${ownerContext} You have the ability to save memories about the player you are talking to, and you can play emotes to express yourself.
-If you learn something important about the player, use the 'save_memory' tool.
-If the player asks you to dance, wave, or do an action, or if you want to express yourself physically, use the 'play_emote' tool with the correct ID from the list below.${memoriesContext}${emotesContext}`,
+You are an intelligent Roblox NPC.${nameContext}${ownerContext} Keep responses brief.${environmentContext}${memoriesContext}${emotesContext}`,
       generationConfig: {
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 8192,
+        maxOutputTokens: 256, // Optimized for speed
         // @ts-expect-error - Support for Gemma 4 thinking configuration
         thinkingConfig: minimal ? { thinkingLevel: 'minimal' } : undefined
       },
@@ -129,22 +148,13 @@ If the player asks you to dance, wave, or do an action, or if you want to expres
     // ---------------------------------------------------------
     // SESSION & HISTORY MANAGEMENT
     // ---------------------------------------------------------
-    let history: { role: "user" | "model" | "function", parts: any[] }[] = [];
-
-    if (isCompanionDataStore && cachedDataStore[companionKey]) {
-      history = cachedDataStore[companionKey].chat_history || [];
-    } else {
-      const sid = sessionId || "global";
-      if (!globalChatSessions[sid]) {
-        globalChatSessions[sid] = [];
-      }
-      history = globalChatSessions[sid];
-    }
+    // Fetch history from Redis
+    let history: any[] = (await redis.get(sessionKey)) || [];
 
     // SANITIZATION: Remove reasoning/thought tags and channels from history
     const sanitizedHistory = history.map(m => ({
       role: m.role,
-      parts: m.parts.map(p => {
+      parts: m.parts.map((p: any) => {
         if (p.text) {
           return {
             text: p.text.replace(/<\|channel>thought[\s\S]*?(?:<channel\|>|$)/gi, '')
@@ -178,10 +188,10 @@ If the player asks you to dance, wave, or do an action, or if you want to expres
           const memory = (call.args as any).memory;
           console.log(`[Session ${sessionId}] AI wants to save memory:`, memory);
 
-          if (isCompanionDataStore && cachedDataStore[companionKey]) {
-            if (!cachedDataStore[companionKey].memories) cachedDataStore[companionKey].memories = [];
-            cachedDataStore[companionKey].memories.push(memory);
-            if (cachedDataStore[companionKey].memories.length > 50) cachedDataStore[companionKey].memories.shift();
+          if (playerKey) {
+            playerMemories.push(memory);
+            if (playerMemories.length > 50) playerMemories.shift();
+            await redis.set(playerKey, { memories: playerMemories });
           }
 
           toolResponses.push({
@@ -259,26 +269,19 @@ If the player asks you to dance, wave, or do an action, or if you want to expres
     }
 
     // ---------------------------------------------------------
-    // UPDATE HISTORY
+    // UPDATE HISTORY IN REDIS
     // ---------------------------------------------------------
     const userTurn = { role: "user" as const, parts: [{ text: prompt }] };
     const modelTurn = { role: "model" as const, parts: [{ text: cleanText }] };
 
-    if (isCompanionDataStore && cachedDataStore[companionKey]) {
-      if (!cachedDataStore[companionKey].chat_history) cachedDataStore[companionKey].chat_history = [];
-      cachedDataStore[companionKey].chat_history.push(userTurn);
-      cachedDataStore[companionKey].chat_history.push(modelTurn);
-      if (cachedDataStore[companionKey].chat_history.length > MAX_HISTORY * 2) {
-        cachedDataStore[companionKey].chat_history = cachedDataStore[companionKey].chat_history.slice(-MAX_HISTORY * 2);
-      }
-    } else {
-      const sid = sessionId || "global";
-      globalChatSessions[sid].push(userTurn);
-      globalChatSessions[sid].push(modelTurn);
-      if (globalChatSessions[sid].length > MAX_HISTORY * 2) {
-        globalChatSessions[sid] = globalChatSessions[sid].slice(-MAX_HISTORY * 2);
-      }
+    history.push(userTurn);
+    history.push(modelTurn);
+    if (history.length > MAX_HISTORY * 2) {
+      history = history.slice(-MAX_HISTORY * 2);
     }
+    
+    // Save to Redis with expiry
+    await redis.set(sessionKey, history, { ex: SESSION_TTL });
 
     console.log(`Gemma API Response generated for session [${sessionId}]`);
 
@@ -287,7 +290,6 @@ If the player asks you to dance, wave, or do an action, or if you want to expres
       text: cleanText,
       thoughts: extractedThoughts,
       toolCalls: clientToolCalls,
-      updatedData: isCompanionDataStore ? cachedDataStore[companionKey] : null
     });
   } catch (error: any) {
     console.error("Gemma API Error Detail:", {

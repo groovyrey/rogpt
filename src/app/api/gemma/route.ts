@@ -48,9 +48,15 @@ const tools: Tool[] = [
 
 export async function POST(req: Request) {
   try {
-    const { prompt, sessionId, companionName } = await req.json();
+    const body = await req.json();
+    const prompt = body.prompt;
+    const sessionId = body.sessionId;
+    const companionName = body.companionName;
+    const ownerName = body.ownerName;
+    // Default to true if not provided (Roblox), but allow explicit false (Test Page)
+    const minimal = body.minimal !== undefined ? body.minimal : true;
 
-    console.log(`Gemma API Request for session [${sessionId}] with prompt:`, prompt);
+    console.log(`Gemma API Request for session [${sessionId}] with prompt:`, prompt, minimal ? "(Minimal Mode)" : "");
 
     if (!prompt) {
       return NextResponse.json(
@@ -95,6 +101,7 @@ export async function POST(req: Request) {
     }
 
     const nameContext = companionName ? ` Your name is ${companionName}.` : "";
+    const ownerContext = ownerName ? ` Your owner is a Roblox player named ${ownerName}. You should be loyal and helpful to them.` : "";
 
     const model = genAI.getGenerativeModel({ 
       model: modelName,
@@ -105,14 +112,16 @@ STRICT REASONING PROTOCOL:
 2. Everything outside the thought channel MUST be the final, user-facing answer in PLAIN TEXT. Do not use Markdown formatting.
 
 PERSONA:
-You are an intelligent NPC in a Roblox game.${nameContext} You have the ability to save memories about the player you are talking to, and you can play emotes to express yourself.
+You are an intelligent NPC in a Roblox game.${nameContext}${ownerContext} You have the ability to save memories about the player you are talking to, and you can play emotes to express yourself.
 If you learn something important about the player, use the 'save_memory' tool.
 If the player asks you to dance, wave, or do an action, or if you want to express yourself physically, use the 'play_emote' tool with the correct ID from the list below.${memoriesContext}${emotesContext}`,
       generationConfig: {
         temperature: 0.7,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 8192
+        maxOutputTokens: 8192,
+        // @ts-expect-error - Support for Gemma 4 thinking configuration
+        thinkingConfig: minimal ? { thinkingLevel: 'minimal' } : undefined
       },
       tools: tools
     });

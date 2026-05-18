@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function Home() {
   const [status, setStatus] = useState<{
@@ -15,7 +16,6 @@ export default function Home() {
 
   const checkStatus = async () => {
     try {
-      // Check Roblox API Endpoint
       const robloxRes = await fetch("/api/roblox");
       const robloxData = await robloxRes.json();
       
@@ -34,8 +34,6 @@ export default function Home() {
   };
 
   useEffect(() => {
-    // Set initial time only on client mount to avoid hydration mismatch
-    setStatus(prev => ({ ...prev, lastUpdate: new Date().toLocaleTimeString() }));
     checkStatus();
     const interval = setInterval(checkStatus, 30000); 
     return () => clearInterval(interval);
@@ -50,21 +48,23 @@ export default function Home() {
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <span className="font-bold text-lg">R</span>
             </div>
-            <h1 className="font-bold text-xl tracking-tight">roGPT <span className="text-slate-500 font-medium">Server</span></h1>
+            <h1 className="font-bold text-xl tracking-tight">roGPT</h1>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1 bg-slate-800 rounded-full border border-slate-700">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span className="text-xs font-medium text-slate-300 tracking-wide uppercase">System Live</span>
-            </div>
+            <Link 
+              href="/test" 
+              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-sm font-medium transition-all shadow-lg shadow-indigo-500/20"
+            >
+              Open Playground
+            </Link>
           </div>
         </div>
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-12">
         <header className="mb-12">
-          <h2 className="text-3xl font-bold mb-2">System Status</h2>
-          <p className="text-slate-400">Real-time monitoring for your Roblox-AI bridge.</p>
+          <h2 className="text-4xl font-extrabold mb-4 tracking-tight">Project Dashboard</h2>
+          <p className="text-slate-400 text-lg">Managing the Gemma AI & Roblox integration.</p>
         </header>
 
         {/* Status Grid */}
@@ -73,14 +73,14 @@ export default function Home() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-slate-700 transition-colors shadow-sm">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-slate-200">Roblox Connection</h3>
-                <p className="text-sm text-slate-500 mt-1">HttpService Bridge</p>
+                <h3 className="text-lg font-semibold text-slate-200">Roblox Bridge</h3>
+                <p className="text-sm text-slate-500 mt-1">HttpService Connection</p>
               </div>
               <StatusBadge status={status.roblox} />
             </div>
             <div className="mt-8 flex items-end justify-between">
-              <div className="text-xs text-slate-500 font-mono">ENDPOINT: /api/roblox</div>
-              <div className="text-xs text-slate-500">Last check: {status.lastUpdate}</div>
+              <div className="text-xs text-slate-500 font-mono uppercase tracking-wider">/api/roblox</div>
+              <div className="text-xs text-slate-500 italic">Checked: {status.lastUpdate || "..."}</div>
             </div>
           </div>
 
@@ -88,68 +88,66 @@ export default function Home() {
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-slate-700 transition-colors shadow-sm">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-slate-200">Gemma AI Engine</h3>
-                <p className="text-sm text-slate-500 mt-1">gemma-4-26b-a4b-it</p>
+                <h3 className="text-lg font-semibold text-slate-200">Gemma 4 IT</h3>
+                <p className="text-sm text-slate-500 mt-1">26B-A4B-IT Model</p>
               </div>
               <StatusBadge status={status.gemma} />
             </div>
             <div className="mt-8 flex items-end justify-between">
-              <div className="text-xs text-slate-500 font-mono">ENDPOINT: /api/gemma</div>
-              <div className="text-xs text-slate-500">Status: Operational</div>
+              <div className="text-xs text-slate-500 font-mono uppercase tracking-wider">/api/gemma</div>
+              <div className="text-xs text-indigo-400 font-semibold uppercase tracking-widest text-[10px]">Minimal Mode Default</div>
             </div>
           </div>
         </div>
 
-        {/* Quick Links / Docs Section */}
+        {/* Feature Highlights */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8">
-              <h3 className="text-xl font-bold mb-4">Integration Guide</h3>
-              <div className="space-y-4">
-                <div className="flex gap-4 p-4 bg-slate-950 rounded-xl border border-slate-800">
-                  <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold shrink-0">1</div>
-                  <div>
-                    <h4 className="font-semibold text-slate-200">Start the Server</h4>
-                    <p className="text-sm text-slate-400 mt-1">Roblox is configured to call https://rogpt-server.vercel.app in production.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 p-4 bg-slate-950 rounded-xl border border-slate-800">
-                  <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold shrink-0">2</div>
-                  <div>
-                    <h4 className="font-semibold text-slate-200">Enable HttpService</h4>
-                    <p className="text-sm text-slate-400 mt-1">In Roblox Studio, run `game:GetService("HttpService").HttpEnabled = true` in the Command Bar.</p>
-                  </div>
-                </div>
-                <div className="flex gap-4 p-4 bg-slate-950 rounded-xl border border-slate-800">
-                  <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold shrink-0">3</div>
-                  <div>
-                    <h4 className="font-semibold text-slate-200">Test the Chat</h4>
-                    <p className="text-sm text-slate-400 mt-1">Use `/ask Hello` privately, or enable Public Ask in the companion hub and use `!ask Hello` in chat.</p>
-                  </div>
-                </div>
+            <div className="bg-indigo-600/5 border border-indigo-500/20 rounded-2xl p-8">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-400"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                Core Capabilities
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FeatureCard 
+                  title="Owner Aware" 
+                  desc="AI recognizes you as its owner and maintains loyalty."
+                />
+                <FeatureCard 
+                  title="Ultra Fast" 
+                  desc="Minimal Thinking mode enabled by default for instant NPC chat."
+                />
+                <FeatureCard 
+                  title="Memory Store" 
+                  desc="NPCs remember facts about players between sessions."
+                />
+                <FeatureCard 
+                  title="Emote Bridge" 
+                  desc="AI can trigger Roblox animations and emotes physically."
+                />
               </div>
             </div>
           </div>
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-            <h3 className="font-bold text-slate-200 mb-6">Recent Activity</h3>
+            <h3 className="font-bold text-slate-200 mb-6">System Log</h3>
             <div className="space-y-6">
               <ActivityItem 
-                time="Today" 
-                title="Model Updated" 
-                desc="Switched to gemma-4-26b-a4b-it" 
+                time="Recent" 
+                title="Thinking Refactored" 
+                desc="Defaulted to minimal tier for 2x speed." 
                 type="update"
               />
               <ActivityItem 
-                time="Today" 
-                title="Chat Integration" 
-                desc="RemoteEvent bridge established" 
+                time="Recent" 
+                title="Owner Identity" 
+                desc="Loyalty protocols integrated into persona." 
                 type="success"
               />
               <ActivityItem 
-                time="Today" 
-                title="Server Init" 
-                desc="roGPT backend initialized" 
+                time="Static" 
+                title="Model Locked" 
+                desc="Gemma-4-26b-a4b-it active." 
                 type="info"
               />
             </div>
@@ -157,11 +155,10 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="max-w-5xl mx-auto px-6 py-12 border-t border-slate-800 mt-12 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-500 text-sm">
-        <p>© 2026 roGPT Server. All systems operational.</p>
+      <footer className="max-w-5xl mx-auto px-6 py-12 border-t border-slate-800 mt-12 flex justify-between items-center text-slate-500 text-sm font-medium">
+        <p>roGPT &bull; Personal Project</p>
         <div className="flex gap-6">
-          <a href="#" className="hover:text-slate-300 transition-colors">Documentation</a>
-          <a href="https://github.com/groovyrey/rogpt" className="hover:text-slate-300 transition-colors">GitHub</a>
+          <Link href="/test" className="hover:text-indigo-400 transition-colors uppercase tracking-widest text-[10px]">Test API</Link>
         </div>
       </footer>
     </div>
@@ -171,20 +168,29 @@ export default function Home() {
 function StatusBadge({ status }: { status: "online" | "offline" | "loading" }) {
   if (status === "loading") {
     return (
-      <span className="px-3 py-1 bg-slate-800 text-slate-400 rounded-lg text-xs font-bold uppercase tracking-wider animate-pulse">
-        Checking...
+      <span className="px-3 py-1 bg-slate-800 text-slate-400 rounded-lg text-[10px] font-bold uppercase tracking-wider animate-pulse">
+        Syncing
       </span>
     );
   }
 
   return (
-    <span className={`px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider ${
+    <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
       status === "online" 
         ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
         : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
     }`}>
       {status}
     </span>
+  );
+}
+
+function FeatureCard({ title, desc }: { title: string, desc: string }) {
+  return (
+    <div className="p-4 bg-slate-900/50 border border-slate-800 rounded-xl">
+      <h4 className="font-bold text-slate-200 text-sm mb-1">{title}</h4>
+      <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+    </div>
   );
 }
 
@@ -203,11 +209,11 @@ function ActivityItem({ time, title, desc, type }: { time: string, title: string
       </div>
       <div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 uppercase font-medium">{time}</span>
-          <span className="w-1 h-1 bg-slate-700 rounded-full"></span>
-          <h4 className="text-xs font-bold text-slate-300 tracking-tight">{title}</h4>
+          <span className="text-[10px] text-slate-600 uppercase font-bold tracking-tight">{time}</span>
+          <span className="w-1 h-1 bg-slate-800 rounded-full"></span>
+          <h4 className="text-xs font-bold text-slate-300">{title}</h4>
         </div>
-        <p className="text-xs text-slate-500 mt-1 leading-relaxed">{desc}</p>
+        <p className="text-[11px] text-slate-500 mt-1 leading-tight">{desc}</p>
       </div>
     </div>
   );

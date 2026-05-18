@@ -280,7 +280,7 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}
             const thoughtText = (part as any).text || (part as any).thought;
             if (typeof thoughtText === 'string') extractedThoughts += thoughtText;
           } else if (part.text) {
-            fullText += part.text;
+            fullText += (fullText && !fullText.endsWith(" ") ? " " : "") + part.text;
           }
         }
       }
@@ -419,27 +419,68 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}
 
     if (!cleanText && fullText) cleanText = fullText.trim();
 
+    // Fallback text if the model only used tools and didn't provide a verbal response
+    if (!cleanText && (clientToolCalls.length > 0 || loopCount > 0)) {
+      const toolNames = clientToolCalls.map(c => c.name);
+      if (toolNames.includes("give_tool")) {
+        cleanText = "Here you go!";
+      } else if (toolNames.includes("play_emote")) {
+        cleanText = "Let's go!";
+      } else if (toolNames.includes("save_memory")) {
+        cleanText = "Got it, I'll remember that.";
+      } else {
+        cleanText = "Alright, I've handled that for you.";
+      }
+      console.log(`[Session ${sessionId}] AI was silent but used tools. Added fallback text: "${cleanText}"`);
+    }
+
     if (extractedThoughts) {
       console.log(`[Session ${sessionId}] Gemma Thoughts:`, extractedThoughts);
     }
 
     // ---------------------------------------------------------
-    // UPDATE HISTORY IN REDIS (Keep as sync point for other tools/UIs)
+    // UPDATE HISTORY IN REDIS (Save ALL turns including tool calls)
     // ---------------------------------------------------------
     if (redis) {
-      const userTurn = { role: "user" as const, parts: [{ text: prompt }] };
-      const modelTurn = { role: "model" as const, parts: [{ text: cleanText }] };
+      // Ensure the final model response is in contents for persistence
+      if (response && response.candidates && response.candidates[0]) {
+        const lastContent = response.candidates[0].content;
+        const lastInContents = contents[contents.length - 1];
+        // Only push if it's not already there (the loop might have pushed it if it continued)
+        if (lastInContents !== lastContent) {
+          contents.push(lastContent);
+        }
+      }
+
+      // We want to save the new turns from this interaction
+      // contents contains: [sanitizedHistory, UserTurn, (ModelCall, FunctionResp)*, FinalModelTurn]
+      const newTurns = contents.slice(sanitizedHistory.length);
 
       let currentHistory: any[] = incomingHistory || [];
       if (!incomingHistory) {
-        const stored = await redis.get(sessionKey);
-        if (Array.isArray(stored)) currentHistory = stored;
+        try {
+          const stored = await redis.get(sessionKey);
+          if (Array.isArray(stored)) currentHistory = stored;
+        } catch (err) {
+          console.error("Error reading history from Redis:", err);
+        }
       }
 
-      currentHistory.push(userTurn);
-      currentHistory.push(modelTurn);
-      if (currentHistory.length > MAX_HISTORY * 2) {
-        currentHistory = currentHistory.slice(-MAX_HISTORY * 2);
+      // Add the new turns (User message, model calls, function responses, and final model text)
+      currentHistory.push(...newTurns);
+      
+      // Limit history by turn count (number of user messages)
+      const userMessageCount = currentHistory.filter(m => m.role === "user").length;
+      if (userMessageCount > MAX_HISTORY) {
+        let turnsToDrop = userMessageCount - MAX_HISTORY;
+        while (turnsToDrop > 0 && currentHistory.length > 0) {
+          if (currentHistory[0].role === "user") turnsToDrop--;
+          currentHistory.shift();
+        }
+        // Ensure we always start with a 'user' role for SDK compliance
+        while (currentHistory.length > 0 && currentHistory[0].role !== "user") {
+          currentHistory.shift();
+        }
       }
       
       try {

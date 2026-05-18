@@ -14,6 +14,7 @@ export default function TestPage() {
   const [loading, setLoading] = useState(false);
   const [minimal, setMinimal] = useState(false);
   const [ownerName, setOwnerName] = useState("Alex");
+  const [sessionId] = useState(() => "test-session-" + Math.random().toString(36).substring(2, 9));
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export default function TestPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: prompt,
-          sessionId: "test-session-" + Date.now(),
+          sessionId: sessionId,
           companionName: "Gemma Test Bot",
           ownerName: ownerName,
           minimal: minimal,

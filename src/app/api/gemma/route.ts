@@ -50,6 +50,20 @@ const tools: Tool[] = [
           type: SchemaType.OBJECT,
           properties: {}
         }
+      },
+      {
+        name: "give_tool",
+        description: "Give a specific tool or item to the player from the server's storage.",
+        parameters: {
+          type: SchemaType.OBJECT,
+          properties: {
+            toolName: {
+              type: SchemaType.STRING,
+              description: "The exact name of the tool to give (e.g., 'Sword', 'Flashlight')."
+            }
+          },
+          required: ["toolName"]
+        }
       }
     ]
   }
@@ -93,6 +107,7 @@ export async function POST(req: Request) {
     // ---------------------------------------------------------
     let memoriesContext = "";
     let emotesContext = "";
+    let toolsContext = "";
     let environmentContext = "";
     
     const sessionKey = `chat_session:${sessionId || "global"}`;
@@ -118,7 +133,7 @@ export async function POST(req: Request) {
 
     // Process Game State (Brief version for system prompt)
     if (gameState) {
-      const { playerCount, location, timeOfDay, availableEmotes } = gameState;
+      const { playerCount, location, timeOfDay, availableEmotes, availableTools } = gameState;
       environmentContext = "\nCURRENT GAME STATE:\n";
       if (playerCount !== undefined) environmentContext += `- Total Players: ${playerCount}\n`;
       if (location) environmentContext += `- Current Location: ${location}\n`;
@@ -126,6 +141,10 @@ export async function POST(req: Request) {
       
       if (availableEmotes && Array.isArray(availableEmotes)) {
         emotesContext = "\nAVAILABLE EMOTES:\n" + availableEmotes.map((e: any) => `${e.name}: ${e.id}`).join("\n");
+      }
+
+      if (availableTools && Array.isArray(availableTools) && availableTools.length > 0) {
+        toolsContext = "\nAVAILABLE TOOLS (You can give these to the player):\n" + availableTools.join(", ");
       }
     }
 
@@ -144,11 +163,12 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}
 - ALWAYS provide a NEW, UNIQUE text response for every prompt.
 - Acknowledge the player's latest message specifically.
 - MANDATORY: If the player tells you a new fact about themselves (like a nickname, preference, or goal), you MUST use the 'save_memory' tool immediately.
+- If the player asks for an item or tool, use the 'give_tool' function with the requested tool name.
 - If 'PLAYER MEMORIES' contains a preferred name or nickname, use that instead of the 'ownerName' (Roblox username).
 - If you use a tool (like play_emote or save_memory), describe your action or respond to the player while doing it.
 - NEVER repeat previous information unless specifically asked.
 - Keep responses brief (1-3 sentences).
-- Use get_player_info if you need to know what other players are doing or their health status.${environmentContext}${memoriesContext}${emotesContext}`,
+- Use get_player_info if you need to know what other players are doing or their health status.${environmentContext}${memoriesContext}${emotesContext}${toolsContext}`,
       generationConfig: {
         temperature: 0.9, // Higher variety to prevent repetition
         topK: 50,
@@ -186,7 +206,7 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}
           if (p && typeof p === "object" && p.text) {
             return {
               text: p.text.replace(/<\|channel>thought[\s\S]*?(?:<channel\|>|$)/gi, '')
-                          .replace(/<(thought|think|reasoning)>[\s\S]*?(?:<\/\1>|$)/gi, '')
+                          .replace(/<(?:thought|think|reasoning)>[\s\S]*?(?:<\/(?:thought|think|reasoning)>|$)/gi, '')
                           .replace(/<\|channel>[\s\S]*?(?:<channel\|>|$)/gi, '')
                           .replace(/<\|[\s\S]*?\|>/gi, "")
                           .trim()
@@ -327,6 +347,17 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}
               }
             });
           }
+        } else if (call.name === "give_tool") {
+          const toolName = (call.args as any).toolName;
+          console.log(`[Session ${sessionId}] AI wants to give tool:`, toolName);
+          
+          clientToolCalls.push(call);
+          toolResponses.push({
+            functionResponse: {
+              name: "give_tool",
+              response: { content: `Tool '${toolName}' requested and will be delivered if available.` }
+            }
+          });
         } else if (call.name === "get_player_info") {
           console.log(`[Session ${sessionId}] AI requested player info.`);
           const playersInfo = gameState?.players || [];
@@ -375,13 +406,13 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}
       const channelMatch = fullText.match(/<\|channel>thought([\s\S]*?)(?:<channel\|>|$)/i);
       if (channelMatch) extractedThoughts = channelMatch[1].trim();
       else {
-        const thoughtMatch = fullText.match(/<(thought|think|reasoning)>([\s\S]*?)(?:<\/\1>|$)/i);
-        if (thoughtMatch) extractedThoughts = thoughtMatch[2].trim();
+        const thoughtMatch = fullText.match(/<(?:thought|think|reasoning)>([\s\S]*?)(?:<\/(?:thought|think|reasoning)>|$)/i);
+        if (thoughtMatch) extractedThoughts = thoughtMatch[1].trim();
       }
     }
 
     let cleanText = fullText.replace(/<\|channel>thought[\s\S]*?(?:<channel\|>|$)/gi, "")
-                            .replace(/<(thought|think|reasoning)>[\s\S]*?(?:<\/\1>|$)/gi, "")
+                            .replace(/<(?:thought|think|reasoning)>[\s\S]*?(?:<\/(?:thought|think|reasoning)>|$)/gi, "")
                             .replace(/<\|channel>[\s\S]*?(?:<channel\|>|$)/gi, "")
                             .replace(/<\|[\s\S]*?\|>/gi, "")
                             .trim();
@@ -426,12 +457,12 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}
       thoughts: extractedThoughts,
       toolCalls: clientToolCalls,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Gemma API Error Detail:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
+      message: (error as any).message,
+      stack: (error as any).stack,
+      name: (error as any).name
     });
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: (error as any).message || "Internal server error" }, { status: 500 });
   }
 }

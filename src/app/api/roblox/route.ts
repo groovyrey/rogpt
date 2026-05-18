@@ -19,10 +19,10 @@ export async function POST(request: Request) {
       message: 'Successfully connected to rogpt-server',
       timestamp: new Date().toISOString(),
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error processing Roblox request:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error: ' + (error.message || 'Unknown error') },
+      { success: false, error: 'Internal server error: ' + ((error as any).message || 'Unknown error') },
       { status: 500 }
     );
   }

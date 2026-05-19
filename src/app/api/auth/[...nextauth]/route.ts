@@ -8,7 +8,7 @@ export const authOptions: NextAuthOptions = {
       name: "Roblox",
       type: "oauth",
       wellKnown: "https://apis.roblox.com/oauth/.well-known/openid-configuration",
-      authorization: { params: { scope: "openid profile verification age premium roles attributes credentials asset:read asset:write group:read group:write universe:write universe-place:write universe.place:write universe-places:write universe-datastore:read universe-datastore:write universe-datastores.objects:read universe-datastores.objects:write universe-datastores.objects:list universe-datastores.control:list universe-ordered-datastore:read universe-ordered-datastore:write universe-messaging-service:publish legacy-universe.following:read legacy-universe.following:write creator-store-product:read creator-store-product:write" } },
+      authorization: { params: { scope: "openid profile verification age premium roles attributes credentials asset:read asset:write group:read group:write universe:write universe.place:write universe-places:write universe-datastore:read universe-datastore:write universe-datastores.objects:read universe-datastores.objects:write universe-datastores.objects:list universe-datastores.control:list universe-ordered-datastore:read universe-ordered-datastore:write universe-messaging-service:publish legacy-universe.following:read legacy-universe.following:write creator-store-product:read creator-store-product:write" } },
       idToken: true,
       checks: ["pkce", "state"],
       clientId: process.env.ROBLOX_CLIENT_ID,

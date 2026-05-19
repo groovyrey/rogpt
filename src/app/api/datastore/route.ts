@@ -24,11 +24,11 @@ export async function POST(request: Request) {
     const redisKey = `datastore:${key}`;
 
     if (action === "sync") {
-      // Roblox is sending data to the server
+      // 1. Redis Sync (Key: Companion_{userId})
       await redis.set(redisKey, value, { ex: DATASTORE_TTL });
       console.log(`Synced DataStore Key [${redisKey}]:`, value);
 
-      // DATA CONSISTENCY: If this is a companion sync, update the bot config too
+      // 2. Data Consistency (Update Bot Config)
       if (key.startsWith("Companion_") && value.name) {
         const userId = key.replace("Companion_", "");
         const configKey = `companion_config:${userId}`;
@@ -41,14 +41,14 @@ export async function POST(request: Request) {
         };
         
         await redis.set(configKey, updatedConfig);
-      }
 
-      // OPTIONAL: Also push to Open Cloud for absolute persistence
-      // We do this in a background-like way (no await) to keep the response fast
-      if (process.env.ROGPT_UNIVERSE_ID && process.env.ROBLOX_API_KEY) {
-        robloxCloud.setEntry(ROBLOX_DATASTORE_NAME, key, value).catch(err => {
-          console.warn("Failed to push to Roblox Open Cloud:", err.message);
-        });
+        // 3. Open Cloud Sync (Background)
+        // Note: For Open Cloud, we use entryKey = userId, scope = Companions
+        if (process.env.ROGPT_UNIVERSE_ID && process.env.ROBLOX_API_KEY) {
+          robloxCloud.setEntry(ROBLOX_DATASTORE_NAME, userId, value, "Companions").catch(err => {
+            console.warn("Failed to push to Roblox Open Cloud:", err.message);
+          });
+        }
       }
 
       return NextResponse.json({ success: true, message: "Data synced to Redis" });
@@ -60,9 +60,10 @@ export async function POST(request: Request) {
       
       // 2. Fallback to Roblox Open Cloud (source of truth)
       if (!data && process.env.ROGPT_UNIVERSE_ID && process.env.ROBLOX_API_KEY) {
-        console.log(`Key [${key}] not in Redis, fetching from Open Cloud...`);
+        const userId = key.startsWith("Companion_") ? key.replace("Companion_", "") : key;
+        console.log(`Key [${key}] not in Redis, fetching from Open Cloud (ID: ${userId})...`);
         try {
-          data = await robloxCloud.getEntry(ROBLOX_DATASTORE_NAME, key);
+          data = await robloxCloud.getEntry(ROBLOX_DATASTORE_NAME, userId, "Companions");
           if (data) {
             // Backfill Redis
             await redis.set(redisKey, data, { ex: DATASTORE_TTL });

@@ -15,103 +15,124 @@ export default function TestPage() {
     setError("");
     setResult(null);
     try {
-      const res = await fetch(`/api/test-sync?userId=${userId}`);
+      const res = await fetch(`/api/test-sync?userId=${userId.trim()}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResult(data);
     } catch (err: any) {
-      setError(err.message);
+      console.error("Test Error:", err);
+      setError(err.message || "An unknown error occurred");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 p-6 font-sans">
-      <div className="max-w-3xl mx-auto space-y-8">
-        <header className="flex items-center justify-between">
+    <div className="min-h-screen bg-slate-950 text-slate-50 p-4 sm:p-6 font-sans">
+      <div className="max-w-4xl mx-auto space-y-6 sm:y-8">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">System <span className="text-indigo-400">Diagnostic</span></h1>
-            <p className="text-slate-400 mt-1">Verify connection between Web, Redis, and Roblox DataStore.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">System <span className="text-indigo-400">Diagnostic</span></h1>
+            <p className="text-slate-400 text-sm mt-1">Verify connection between Web, Redis, and Roblox DataStore.</p>
           </div>
-          <Link href="/bot" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">Back to Bot</Link>
+          <Link href="/bot" className="text-xs font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors w-fit">
+            Back to Bot
+          </Link>
         </header>
 
-        <section className="bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-6 shadow-xl">
-          <div className="space-y-2">
+        <section className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-5 sm:p-8 space-y-6 shadow-xl">
+          <div className="space-y-3">
             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Roblox User ID</label>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <input 
                 type="text" 
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
-                placeholder="e.g. 12345678"
+                placeholder="Enter Roblox User ID"
                 className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
               />
               <button 
                 onClick={runTest}
                 disabled={loading || !userId}
-                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 whitespace-nowrap"
+                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 whitespace-nowrap text-sm"
               >
-                {loading ? "Running..." : "Test Connection"}
+                {loading ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Testing...
+                  </>
+                ) : "Run Diagnostic"}
               </button>
             </div>
           </div>
 
           {error && (
-            <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-sm font-medium">
-              Error: {error}
+            <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-400 text-xs font-medium break-words">
+              <strong>Error:</strong> {error}
             </div>
           )}
 
           {result && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {/* Redis Card */}
-              <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-sm">Redis Cache</h3>
-                  <StatusBadge status={result.redis.status} />
-                </div>
-                {result.redis.data ? (
-                  <pre className="text-[10px] text-slate-400 bg-slate-900 p-3 rounded-lg overflow-x-auto">
-                    {JSON.stringify(result.redis.data, null, 2)}
-                  </pre>
-                ) : (
-                  <p className="text-xs text-slate-500 italic">No data cached in Redis.</p>
-                )}
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              {/* Config Status */}
+              <div className="flex flex-wrap gap-2">
+                <ConfigBadge label="Universe ID" active={result.config.universeId === "Configured"} />
+                <ConfigBadge label="API Key" active={result.config.apiKey === "Configured"} />
               </div>
 
-              {/* Open Cloud Card */}
-              <div className="bg-slate-950/50 border border-slate-800 rounded-2xl p-6 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-bold text-sm">Roblox Open Cloud</h3>
-                  <StatusBadge status={result.openCloud.status} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                {/* Redis Card */}
+                <div className="bg-slate-950/40 border border-slate-800 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">Redis Cache</h3>
+                    <StatusBadge status={result.redis.status} />
+                  </div>
+                  <div className="bg-slate-900/80 rounded-xl overflow-hidden">
+                    <div className="text-[10px] bg-slate-800 px-3 py-1 text-slate-400 font-mono border-b border-slate-700">datastore:Companion_{result.userId}</div>
+                    <pre className="text-[10px] text-slate-300 p-3 max-h-48 overflow-y-auto font-mono scrollbar-hide">
+                      {result.redis.data ? JSON.stringify(result.redis.data, null, 2) : "// No data found in cache"}
+                    </pre>
+                  </div>
                 </div>
-                {result.openCloud.data ? (
-                  <pre className="text-[10px] text-slate-400 bg-slate-900 p-3 rounded-lg overflow-x-auto">
-                    {JSON.stringify(result.openCloud.data, null, 2)}
-                  </pre>
-                ) : (
-                  <p className="text-xs text-slate-500 italic">
-                    {result.openCloud.error || "No data found in Roblox DataStore."}
-                  </p>
-                )}
+
+                {/* Open Cloud Card */}
+                <div className="bg-slate-950/40 border border-slate-800 rounded-2xl p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-xs uppercase tracking-wider text-slate-300">Open Cloud</h3>
+                    <StatusBadge status={result.openCloud.status} />
+                  </div>
+                  <div className="bg-slate-900/80 rounded-xl overflow-hidden">
+                    <div className="text-[10px] bg-slate-800 px-3 py-1 text-slate-400 font-mono border-b border-slate-700">DS: CompanionDataStore | Scope: Companions</div>
+                    <pre className="text-[10px] text-slate-300 p-3 max-h-48 overflow-y-auto font-mono scrollbar-hide">
+                      {result.openCloud.data ? JSON.stringify(result.openCloud.data, null, 2) : 
+                       result.openCloud.error ? `// Error: ${result.openCloud.error}` : "// No data found in Roblox"}
+                    </pre>
+                  </div>
+                </div>
               </div>
 
-              {/* Summary */}
-              <div className="md:col-span-2 p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Sync Health</span>
-                <span className={`text-sm font-bold ${result.syncStatus === 'synchronized' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {result.syncStatus === 'synchronized' ? 'Perfectly In Sync' : 
-                   result.syncStatus === 'needs_backfill' ? 'Data exists in Roblox only' : 'Out of Sync / Not Found'}
+              {/* Summary Summary */}
+              <div className={`p-4 rounded-xl flex items-center justify-between border ${
+                result.syncStatus === 'synchronized' ? 'bg-emerald-500/5 border-emerald-500/20' : 
+                result.syncStatus === 'needs_backfill' ? 'bg-amber-500/5 border-amber-500/20' : 'bg-slate-800/50 border-slate-700'
+              }`}>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">System Status</span>
+                <span className={`text-xs font-bold ${
+                  result.syncStatus === 'synchronized' ? 'text-emerald-400' : 
+                  result.syncStatus === 'needs_backfill' ? 'text-amber-400' : 'text-slate-400'
+                }`}>
+                  {result.syncStatus === 'synchronized' ? '✓ FULLY SYNCHRONIZED' : 
+                   result.syncStatus === 'needs_backfill' ? '! DATA EXISTS IN ROBLOX ONLY' : '⚠ NO DATA LINK FOUND'}
                 </span>
               </div>
             </div>
           )}
         </section>
 
-        <footer className="text-center text-[10px] text-slate-600 uppercase tracking-[0.2em] font-bold">
-          Universe ID: {process.env.NEXT_PUBLIC_ROGPT_UNIVERSE_ID || "Loaded from Server"}
+        <footer className="text-center">
+           <p className="text-[9px] text-slate-600 uppercase tracking-[0.2em] font-bold">
+            Diagnostics Mode • Universe {process.env.NEXT_PUBLIC_ROGPT_UNIVERSE_ID || "Loaded"}
+           </p>
         </footer>
       </div>
     </div>
@@ -128,8 +149,19 @@ function StatusBadge({ status }: { status: string }) {
   };
 
   return (
-    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md border ${colors[status] || colors.pending}`}>
+    <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${colors[status] || colors.pending}`}>
       {status.replace('_', ' ')}
+    </span>
+  );
+}
+
+function ConfigBadge({ label, active }: { label: string, active: boolean }) {
+  return (
+    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border flex items-center gap-1.5 ${
+      active ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+    }`}>
+      <div className={`w-1 h-1 rounded-full ${active ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+      {label}
     </span>
   );
 }

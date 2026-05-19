@@ -3,7 +3,12 @@ import { redis } from '@/lib/redis';
 import { robloxCloud } from '@/lib/roblox';
 
 const DATASTORE_TTL = 86400 * 7; // 7 days persistence
-const ROBLOX_DATASTORE_NAME = "CompanionDataStore"; // Matches DATASTORE_NAME in Lua
+
+// DataStore mapping
+const MAPPING: Record<string, { name: string; scope: string }> = {
+  Companion: { name: "CompanionDataStore", scope: "Companions" },
+  Player: { name: "MainDataStore", scope: "Players" },
+};
 
 export async function POST(request: Request) {
   try {
@@ -22,50 +27,47 @@ export async function POST(request: Request) {
     }
 
     const redisKey = `datastore:${key}`;
+    const [prefix, rawId] = key.split("_");
+    const dsInfo = MAPPING[prefix];
 
     if (action === "sync") {
-      // 1. Redis Sync (Key: Companion_{userId})
+      // 1. Redis Sync
       await redis.set(redisKey, value, { ex: DATASTORE_TTL });
       console.log(`Synced DataStore Key [${redisKey}]:`, value);
 
-      // 2. Data Consistency (Update Bot Config)
-      if (key.startsWith("Companion_") && value.name) {
-        const userId = key.replace("Companion_", "");
+      // 2. Specialized Logic for Companions
+      if (prefix === "Companion" && value.name) {
+        const userId = rawId;
         const configKey = `companion_config:${userId}`;
-        
         const existingConfig = await redis.get(configKey) as any;
         const updatedConfig = {
           name: value.name,
           persona: existingConfig?.persona || "You are an intelligent Roblox NPC. You should be loyal and helpful to your owner.",
           ownerName: existingConfig?.ownerName || "Owner"
         };
-        
         await redis.set(configKey, updatedConfig);
+      }
 
-        // 3. Open Cloud Sync (Background)
-        // Note: For Open Cloud, we use entryKey = userId, scope = Companions
-        if (process.env.ROGPT_UNIVERSE_ID && process.env.ROBLOX_API_KEY) {
-          robloxCloud.setEntry(ROBLOX_DATASTORE_NAME, userId, value, "Companions").catch(err => {
-            console.warn("Failed to push to Roblox Open Cloud:", err.message);
-          });
-        }
+      // 3. Open Cloud Sync (Background)
+      if (dsInfo && process.env.ROGPT_UNIVERSE_ID && process.env.ROBLOX_API_KEY) {
+        robloxCloud.setEntry(dsInfo.name, rawId, value, dsInfo.scope).catch(err => {
+          console.warn(`Failed to push to Roblox Open Cloud (${dsInfo.name}):`, err.message);
+        });
       }
 
       return NextResponse.json({ success: true, message: "Data synced to Redis" });
     }
 
     if (action === "fetch") {
-      // 1. Try Redis first (fast)
+      // 1. Try Redis first
       let data = await redis.get(redisKey);
       
-      // 2. Fallback to Roblox Open Cloud (source of truth)
-      if (!data && process.env.ROGPT_UNIVERSE_ID && process.env.ROBLOX_API_KEY) {
-        const userId = key.startsWith("Companion_") ? key.replace("Companion_", "") : key;
-        console.log(`Key [${key}] not in Redis, fetching from Open Cloud (ID: ${userId})...`);
+      // 2. Fallback to Roblox Open Cloud
+      if (!data && dsInfo && process.env.ROGPT_UNIVERSE_ID && process.env.ROBLOX_API_KEY) {
+        console.log(`Key [${key}] not in Redis, fetching from Open Cloud...`);
         try {
-          data = await robloxCloud.getEntry(ROBLOX_DATASTORE_NAME, userId, "Companions");
+          data = await robloxCloud.getEntry(dsInfo.name, rawId, dsInfo.scope);
           if (data) {
-            // Backfill Redis
             await redis.set(redisKey, data, { ex: DATASTORE_TTL });
           }
         } catch (err) {

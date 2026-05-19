@@ -16,6 +16,7 @@ export default function BotPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
   const [showSettings, setShowSettings] = useState(false);
+  const [playerData, setPlayerData] = useState<any>(null);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -26,8 +27,15 @@ export default function BotPage() {
           if (!data.error) {
             setConfig(data);
           }
+          
+          // Fetch Player Stats
+          const playerRes = await fetch("/api/player");
+          const playerData = await playerRes.json();
+          if (playerData.success) {
+            setPlayerData(playerData.data);
+          }
         } catch (err) {
-          console.error("Failed to fetch bot config", err);
+          console.error("Failed to fetch bot config or player stats", err);
         } finally {
           setLoading(false);
         }
@@ -167,10 +175,38 @@ export default function BotPage() {
           </section>
         )}
 
+        {/* Player Stats Dashboard */}
+        {playerData && (
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-slate-500 uppercase tracking-[0.2em]">Live Game Stats</h2>
+              <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">CONNECTED</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard label="Coins" value={playerData.coins?.toLocaleString() || "0"} icon="💰" />
+              <StatCard label="Current Weapon" value={playerData.weapon || "Fist"} icon="⚔️" />
+              <StatCard label="Inventory Items" value={playerData.inventory?.length || "0"} icon="🎒" />
+              <StatCard label="Experience" value="Level 1" icon="✨" />
+            </div>
+          </section>
+        )}
+
         <section>
           <ChatInterface companionName={config.name} />
         </section>
       </main>
+    </div>
+  );
+}
+
+function StatCard({ label, value, icon }: { label: string; value: string; icon: string }) {
+  return (
+    <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex items-center gap-4 hover:border-indigo-500/30 transition-colors group">
+      <div className="text-2xl group-hover:scale-110 transition-transform">{icon}</div>
+      <div>
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</p>
+        <p className="text-lg font-bold text-slate-100">{value}</p>
+      </div>
     </div>
   );
 }

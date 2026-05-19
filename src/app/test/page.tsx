@@ -5,6 +5,7 @@ import Link from "next/link";
 
 export default function TestPage() {
   const [userId, setUserId] = useState("");
+  const [dataType, setDataType] = useState("Companion");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
@@ -15,7 +16,7 @@ export default function TestPage() {
     setError("");
     setResult(null);
     try {
-      const res = await fetch(`/api/test-sync?userId=${userId.trim()}`);
+      const res = await fetch(`/api/test-sync?userId=${userId.trim()}&type=${dataType}`);
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResult(data);
@@ -41,28 +42,40 @@ export default function TestPage() {
         </header>
 
         <section className="bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl p-5 sm:p-8 space-y-6 shadow-xl">
-          <div className="space-y-3">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Roblox User ID</label>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input 
-                type="text" 
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="Enter Roblox User ID"
-                className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
-              />
+          <div className="space-y-4">
+            <div className="flex items-center gap-4 border-b border-slate-800 pb-4">
               <button 
-                onClick={runTest}
-                disabled={loading || !userId}
-                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 whitespace-nowrap text-sm"
+                onClick={() => setDataType("Companion")}
+                className={`text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all ${dataType === 'Companion' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
               >
-                {loading ? (
-                  <>
-                    <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Testing...
-                  </>
-                ) : "Run Diagnostic"}
+                Companion Data
               </button>
+              <button 
+                onClick={() => setDataType("Player")}
+                className={`text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-lg transition-all ${dataType === 'Player' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                Player Stats
+              </button>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Roblox User ID</label>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input 
+                  type="text" 
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
+                  placeholder={`Enter ${dataType} User ID`}
+                  className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
+                />
+                <button 
+                  onClick={runTest}
+                  disabled={loading || !userId}
+                  className="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 whitespace-nowrap text-sm"
+                >
+                  {loading ? "Running..." : "Run Diagnostic"}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -102,7 +115,9 @@ export default function TestPage() {
                     <StatusBadge status={result.openCloud.status} />
                   </div>
                   <div className="bg-slate-900/80 rounded-xl overflow-hidden">
-                    <div className="text-[10px] bg-slate-800 px-3 py-1 text-slate-400 font-mono border-b border-slate-700">DS: CompanionDataStore | Scope: Companions</div>
+                    <div className="text-[10px] bg-slate-800 px-3 py-1 text-slate-400 font-mono border-b border-slate-700">
+                      DS: {dataType === 'Companion' ? 'CompanionDataStore' : 'MainDataStore'} | Scope: {dataType === 'Companion' ? 'Companions' : 'Players'}
+                    </div>
                     <pre className="text-[10px] text-slate-300 p-3 max-h-48 overflow-y-auto font-mono scrollbar-hide">
                       {result.openCloud.data ? JSON.stringify(result.openCloud.data, null, 2) : 
                        result.openCloud.error ? `// Error: ${result.openCloud.error}` : "// No data found in Roblox"}

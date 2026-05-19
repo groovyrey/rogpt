@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { signIn, signOut, useSession } from "next-auth/react";
 
 export default function Home() {
+  const { data: session } = useSession();
   const [status, setStatus] = useState<{
     roblox: "online" | "offline" | "loading";
     gemma: "online" | "offline" | "loading";
@@ -24,7 +26,7 @@ export default function Home() {
         gemma: "online", 
         lastUpdate: new Date().toLocaleTimeString(),
       });
-    } catch (error) {
+    } catch {
       setStatus({
         roblox: "offline",
         gemma: "offline",
@@ -34,7 +36,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    checkStatus();
+    const init = async () => {
+      await checkStatus();
+    };
+    init();
     const interval = setInterval(checkStatus, 30000); 
     return () => clearInterval(interval);
   }, []);
@@ -43,27 +48,64 @@ export default function Home() {
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-indigo-500/30">
       {/* Header */}
       <nav className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-6 min-h-16 flex items-center justify-between py-3 sm:py-0">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
               <span className="font-bold text-lg">R</span>
             </div>
             <h1 className="font-bold text-xl tracking-tight">roGPT</h1>
           </div>
           <div className="flex items-center gap-4">
             <Link 
-              href="/test" 
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-sm font-medium transition-all shadow-lg shadow-indigo-500/20"
+              href="/ds" 
+              className="text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors hidden sm:block"
             >
-              Open Playground
+              DataStore
             </Link>
+            <Link 
+              href="/test" 
+              className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-full text-xs sm:text-sm font-medium transition-all whitespace-nowrap"
+            >
+              Playground
+            </Link>
+
+            {session ? (
+              <div className="flex items-center gap-3 pl-4 border-l border-slate-800">
+                <div className="hidden md:block text-right">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Connected</p>
+                  <p className="text-xs font-medium text-slate-200">{session.user?.name}</p>
+                </div>
+                {session.user?.image && (
+                  <img 
+                    src={session.user.image} 
+                    alt="Profile" 
+                    className="w-8 h-8 rounded-full border border-slate-700 shadow-sm"
+                  />
+                )}
+                <button 
+                  onClick={() => signOut()}
+                  className="p-2 hover:text-rose-400 transition-colors"
+                  title="Sign Out"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => signIn("roblox")}
+                className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full text-xs sm:text-sm font-medium transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+              >
+                <span>Login</span>
+                <span className="hidden sm:inline">with Roblox</span>
+              </button>
+            )}
           </div>
         </div>
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-12">
         <header className="mb-12">
-          <h2 className="text-4xl font-extrabold mb-4 tracking-tight">Project Dashboard</h2>
+          <h2 className="text-3xl sm:text-4xl font-extrabold mb-4 tracking-tight">Project Dashboard</h2>
           <p className="text-slate-400 text-lg">Managing the Gemma AI & Roblox integration.</p>
         </header>
 
@@ -155,9 +197,10 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="max-w-5xl mx-auto px-6 py-12 border-t border-slate-800 mt-12 flex justify-between items-center text-slate-500 text-sm font-medium">
+      <footer className="max-w-5xl mx-auto px-6 py-12 border-t border-slate-800 mt-12 flex flex-col sm:flex-row justify-between items-center gap-6 text-slate-500 text-sm font-medium text-center sm:text-left">
         <p>roGPT &bull; Personal Project</p>
         <div className="flex gap-6">
+          <Link href="/ds" className="hover:text-indigo-400 transition-colors uppercase tracking-widest text-[10px]">DataStore</Link>
           <Link href="/test" className="hover:text-indigo-400 transition-colors uppercase tracking-widest text-[10px]">Test API</Link>
         </div>
       </footer>

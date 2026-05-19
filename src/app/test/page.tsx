@@ -64,14 +64,14 @@ export default function TestPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans">
       <nav className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-6 min-h-[4rem] flex flex-col sm:flex-row sm:items-center justify-between py-4 sm:py-0 gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
               <span className="font-bold text-lg">T</span>
             </div>
-            <h1 className="font-bold text-xl tracking-tight">Gemma <span className="text-slate-500 font-medium">Test Playground</span></h1>
+            <h1 className="font-bold text-xl tracking-tight whitespace-nowrap">Gemma <span className="hidden md:inline text-slate-500 font-medium">Test Playground</span></h1>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-slate-500 uppercase">Owner:</span>
               <input 
@@ -88,9 +88,12 @@ export default function TestPage() {
               >
                 <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${minimal ? "left-6" : "left-1"}`}></div>
               </div>
-              <span className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Minimal Thinking</span>
+              <span className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Minimal</span>
             </label>
-            <Link href="/" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Back to Dashboard</Link>
+            <Link href="/" className="text-sm text-slate-400 hover:text-slate-200 transition-colors ml-auto sm:ml-0">
+              <span className="sm:hidden">Exit</span>
+              <span className="hidden sm:inline">Back to Dashboard</span>
+            </Link>
           </div>
         </div>
       </nav>

@@ -2,8 +2,6 @@ import { GoogleGenerativeAI, SchemaType, type Tool, type Content, type Part } fr
 import { NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
-export const runtime = 'nodejs';
-
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const MAX_HISTORY = 5; // Reduced from 10 for faster response speed

@@ -18,8 +18,12 @@ export function ChatInterface({ companionName = "Gemma" }: ChatInterfaceProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [ownerName, setOwnerName] = useState("Player");
-  const [sessionId] = useState(() => "chat-" + Math.random().toString(36).substring(2, 9));
+  const [sessionId, setSessionId] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setSessionId("chat-" + Math.random().toString(36).substring(2, 9));
+  }, []);
 
   useEffect(() => {
     if (session?.user?.name) {

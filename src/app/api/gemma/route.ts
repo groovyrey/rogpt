@@ -151,8 +151,10 @@ export async function POST(req: Request) {
     }
 
     // Using gemma-4-31b-it as requested
-    const modelName = "gemma-4-31b-it";
-    
+    const primaryModelName = "gemma-4-31b-it";
+    const fallbackModelName = "gemma-4-26b-a4b-it";
+    let currentModelName = primaryModelName;
+
     // ---------------------------------------------------------
     // IDENTIFY PLAYER / COMPANION / GAME STATE
     // ---------------------------------------------------------
@@ -160,7 +162,7 @@ export async function POST(req: Request) {
     let emotesContext = "";
     let toolsContext = "";
     let environmentContext = "";
-    
+
     // Stable key for authenticated users (Web), randomized/provided key for others (Roblox)
     const sessionKey = userId ? `chat_session:user_${userId}` : `chat_session:${sessionId || "global"}`;
     const playerKey = userId ? `player_data:${userId}` : null;
@@ -201,9 +203,7 @@ export async function POST(req: Request) {
     const nameContext = companionName ? ` Your name is ${companionName}.` : "";
     const ownerContext = ownerName ? ` Your owner is a Roblox player named ${ownerName}. You should be loyal and helpful to them.` : "";
 
-    const model = genAI.getGenerativeModel({ 
-      model: modelName,
-      systemInstruction: `<|think|>
+    const systemInstruction = `<|think|>
 STRICT REASONING PROTOCOL:
 1. Use the thought channel for brief internal logic.
 2. Final answer MUST be CONCISE, PLAIN TEXT, and no Markdown.
@@ -218,15 +218,21 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
 - If you use a tool (like play_emote or save_memory), describe your action or respond to the player while doing it.
 - NEVER repeat previous information unless specifically asked.
 - Keep responses brief (1-3 sentences).
-- Use get_player_info if you need to know what other players are doing or their health status.${environmentContext}${memoriesContext}${emotesContext}${toolsContext}`,
-      generationConfig: {
-        temperature: 0.9, // Higher variety to prevent repetition
-        topK: 50,
-        topP: 0.95,
-        maxOutputTokens: 256,
-        // @ts-expect-error - Support for Gemma 4 thinking configuration
-        thinkingConfig: minimal ? { thinkingLevel: 'minimal' } : undefined
-      },
+- Use get_player_info if you need to know what other players are doing or their health status.${environmentContext}${memoriesContext}${emotesContext}${toolsContext}`;
+
+    const generationConfig = {
+      temperature: 0.9, // Higher variety to prevent repetition
+      topK: 50,
+      topP: 0.95,
+      maxOutputTokens: 256,
+      // @ts-expect-error - Support for Gemma 4 thinking configuration
+      thinkingConfig: minimal ? { thinkingLevel: 'minimal' } : undefined
+    };
+
+    let model = genAI.getGenerativeModel({ 
+      model: currentModelName,
+      systemInstruction,
+      generationConfig,
       tools: tools
     });
 
@@ -299,6 +305,19 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
       } catch (aiError: unknown) {
         const error = aiError as Error;
         retryCount++;
+
+        // FALLBACK LOGIC: If the primary model fails, switch to the 26b model
+        if (currentModelName === primaryModelName) {
+          console.warn(`Primary model ${primaryModelName} failed. Switching to fallback ${fallbackModelName}. Error: ${error.message}`);
+          currentModelName = fallbackModelName;
+          model = genAI.getGenerativeModel({
+            model: currentModelName,
+            systemInstruction,
+            generationConfig,
+            tools: tools
+          });
+        }
+
         if (retryCount > MAX_RETRIES) {
           console.error("AI Generation Error (Max Retries Exceeded):", error);
           return NextResponse.json({ error: "AI service failed after multiple retries: " + (error.message || "Unknown error") }, { status: 500 });

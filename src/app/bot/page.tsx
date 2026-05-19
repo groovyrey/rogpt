@@ -1,84 +1,38 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession, signIn } from "next-auth/react";
-import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 export default function BotPage() {
   const { data: session, status: authStatus } = useSession();
   const [config, setConfig] = useState({
-    name: session?.user?.name || "Gemma",
+    name: "",
     persona: "",
-    ownerName: session?.user?.name || ""
+    ownerName: ""
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
-  const [showSettings, setShowSettings] = useState(false);
-  const [playerData, setPlayerData] = useState<any>(null);
-  const [isEditingStats, setIsEditingStats] = useState(false);
-  const [editStats, setEditStats] = useState({ coins: 0, weapon: "" });
 
   useEffect(() => {
-    // ... (fetch logic remains same)
-    const fetchConfig = async () => {
+    const fetchBot = async () => {
       if (authStatus === "authenticated") {
         try {
           const res = await fetch("/api/bot");
-          const data = await res.json();
-          if (!data.error) {
-            setConfig(data);
-          }
-          
-          // Fetch Player Stats
-          const playerRes = await fetch("/api/player");
-          const playerData = await playerRes.json();
-          if (playerData.success) {
-            setPlayerData(playerData.data);
-            setEditStats({ 
-              coins: playerData.data.coins || 0, 
-              weapon: playerData.data.weapon || "Fist" 
-            });
-          }
+          const botData = await res.json();
+          if (!botData.error) setConfig(botData);
         } catch (err) {
-          console.error("Failed to fetch bot config or player stats", err);
+          console.error("Fetch error", err);
         } finally {
           setLoading(false);
         }
-      } else if (authStatus === "unauthenticated") {
-        setLoading(false);
       }
     };
-    fetchConfig();
+    fetchBot();
   }, [authStatus]);
 
-  const handleSaveStats = async () => {
+  const handleSaveBot = async () => {
     setSaving(true);
-    try {
-      const res = await fetch("/api/player", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editStats),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setPlayerData(data.data);
-        setIsEditingStats(false);
-        setMessage({ text: "Game stats updated successfully!", type: "success" });
-      } else {
-        throw new Error(data.error);
-      }
-    } catch (err: any) {
-      setMessage({ text: err.message, type: "error" });
-    } finally {
-      setSaving(false);
-      setTimeout(() => setMessage({ text: "", type: "" }), 3000);
-    }
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    setMessage({ text: "", type: "" });
     try {
       const res = await fetch("/api/bot", {
         method: "POST",
@@ -87,193 +41,75 @@ export default function BotPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setMessage({ text: "Bot settings saved successfully!", type: "success" });
-      } else {
-        setMessage({ text: data.error || "Failed to save settings", type: "error" });
+        setMessage({ text: "Agent configuration updated.", type: "success" });
       }
-    } catch {
-      setMessage({ text: "Network error", type: "error" });
     } finally {
       setSaving(false);
+      setTimeout(() => setMessage({ text: "", type: "" }), 3000);
     }
   };
 
-  if (authStatus === "loading" || loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (authStatus === "unauthenticated") {
-    return (
-      <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col items-center justify-center p-6 text-center">
-        <h1 className="text-3xl font-bold mb-4">Login Required</h1>
-        <p className="text-slate-400 mb-8 max-w-md">You need to sign in with your Roblox account to manage your bot&apos;s personality and chat with it.</p>
-        <button 
-          onClick={() => signIn("roblox")}
-          className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold shadow-lg shadow-indigo-500/20 transition-all"
-        >
-          Login with Roblox
-        </button>
-      </div>
-    );
-  }
+  if (loading) return <div className="p-24 text-center text-sm text-[#888]">Loading agent settings...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 font-sans">
-      <nav className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-50">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="font-bold text-lg">B</span>
-            </div>
-            <h1 className="font-bold text-xl tracking-tight">Manage <span className="text-slate-500 font-medium">Bot</span></h1>
+    <div className="max-w-screen-xl mx-auto px-6 py-12 space-y-16">
+      {/* Agent Settings */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold tracking-tight">Agent Settings</h2>
+          <p className="text-sm text-[#888] leading-relaxed">
+            Configure how your AI assistant identifies and behaves across your Roblox experiences. 
+            Changes are applied in real-time to all active NPC instances.
+          </p>
+        </div>
+        <div className="md:col-span-2 space-y-8 p-8 bg-[#000] border border-[#333] rounded-xl shadow-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <Field label="Agent Name">
+               <input 
+                type="text" 
+                value={config.name}
+                onChange={(e) => setConfig({ ...config, name: e.target.value })}
+                className="w-full bg-black border border-[#333] rounded-md px-3 py-2 text-sm focus:border-white outline-none transition-colors"
+              />
+            </Field>
+            <Field label="Owner Name">
+               <input 
+                type="text" 
+                value={config.ownerName}
+                onChange={(e) => setConfig({ ...config, ownerName: e.target.value })}
+                className="w-full bg-black border border-[#333] rounded-md px-3 py-2 text-sm focus:border-white outline-none transition-colors"
+              />
+            </Field>
           </div>
-          <div className="flex items-center gap-4">
+          <Field label="System Instructions (Persona)">
+            <textarea 
+              value={config.persona}
+              onChange={(e) => setConfig({ ...config, persona: e.target.value })}
+              className="w-full h-48 bg-black border border-[#333] rounded-md px-3 py-2 text-sm focus:border-white outline-none transition-colors resize-none font-mono"
+              placeholder="e.g. You are a helpful guide in the Roblox world..."
+            />
+          </Field>
+          <div className="pt-6 border-t border-[#333] flex items-center justify-between">
+            <p className={`text-xs ${message.type === 'success' ? 'text-emerald-500' : 'text-rose-500'}`}>{message.text}</p>
             <button 
-              onClick={() => setShowSettings(!showSettings)}
-              className="text-xs font-bold uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
+              onClick={handleSaveBot}
+              disabled={saving}
+              className="px-6 py-2 bg-white text-black text-sm font-semibold rounded hover:bg-[#eaeaea] transition-all disabled:opacity-50"
             >
-              {showSettings ? "Close Settings" : "Configure Bot"}
+              {saving ? "Saving..." : "Save Agent"}
             </button>
-            <Link href="/" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Go Home</Link>
           </div>
         </div>
-      </nav>
-
-      <main className="max-w-4xl mx-auto px-6 py-8 space-y-12">
-        {showSettings && (
-          <section className="bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-6 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300">
-            <header>
-              <h2 className="text-2xl font-bold tracking-tight mb-2">Bot Personality</h2>
-              <p className="text-slate-400 text-sm">Decide how your AI bot talks and behaves.</p>
-            </header>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bot Name</label>
-                <input 
-                  type="text" 
-                  value={config.name}
-                  onChange={(e) => setConfig({ ...config, name: e.target.value })}
-                  placeholder="e.g. Gemma"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Owner Name</label>
-                <input 
-                  type="text" 
-                  value={config.ownerName}
-                  onChange={(e) => setConfig({ ...config, ownerName: e.target.value })}
-                  placeholder={session?.user?.name || "Your Name"}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bot Instructions</label>
-              <textarea 
-                value={config.persona}
-                onChange={(e) => setConfig({ ...config, persona: e.target.value })}
-                placeholder="Describe how your bot should act... e.g. You are a helpful guide. You are polite and friendly."
-                className="w-full h-32 bg-slate-800 border border-slate-700 rounded-2xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none text-sm font-medium leading-relaxed"
-              />
-            </div>
-
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800">
-              {message.text && (
-                <div className={`text-sm font-medium ${message.type === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {message.text}
-                </div>
-              )}
-              <button 
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full sm:w-auto px-8 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 text-sm"
-              >
-                {saving ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  "Save Settings"
-                )}
-              </button>
-            </div>
-          </section>
-        )}
-
-        {/* Player Stats Dashboard */}
-        {playerData && (
-          <section className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-slate-500 uppercase tracking-[0.2em]">Live Game Stats</h2>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => setIsEditingStats(!isEditingStats)}
-                  className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-widest transition-colors"
-                >
-                  {isEditingStats ? "Cancel" : "Edit Stats"}
-                </button>
-                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">CONNECTED</span>
-              </div>
-            </div>
-
-            {isEditingStats ? (
-              <div className="bg-slate-900/80 border border-indigo-500/30 p-6 rounded-2xl animate-in fade-in zoom-in-95 duration-200">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Coins</label>
-                    <input 
-                      type="number"
-                      value={editStats.coins}
-                      onChange={(e) => setEditStats({ ...editStats, coins: parseInt(e.target.value) || 0 })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Weapon</label>
-                    <input 
-                      type="text"
-                      value={editStats.weapon}
-                      onChange={(e) => setEditStats({ ...editStats, weapon: e.target.value })}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
-                    />
-                  </div>
-                </div>
-                <button 
-                  onClick={handleSaveStats}
-                  disabled={saving}
-                  className="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
-                >
-                  {saving ? "Saving to Roblox..." : "Push Updates to Game"}
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatCard label="Coins" value={playerData.coins?.toLocaleString() || "0"} icon="💰" />
-                <StatCard label="Current Weapon" value={playerData.weapon || "Fist"} icon="⚔️" />
-                <StatCard label="Inventory Items" value={playerData.inventory?.length || "0"} icon="🎒" />
-                <StatCard label="Experience" value="Level 1" icon="✨" />
-              </div>
-            )}
-          </section>
-        )}
-      </main>
+      </section>
     </div>
   );
 }
 
-function StatCard({ label, value, icon }: { label: string; value: string; icon: string }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="bg-slate-900/50 border border-slate-800 p-4 rounded-2xl flex items-center gap-4 hover:border-indigo-500/30 transition-colors group">
-      <div className="text-2xl group-hover:scale-110 transition-transform">{icon}</div>
-      <div>
-        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{label}</p>
-        <p className="text-lg font-bold text-slate-100">{value}</p>
-      </div>
+    <div className="space-y-2">
+      <label className="text-xs font-medium text-[#888] uppercase tracking-wider">{label}</label>
+      {children}
     </div>
   );
 }

@@ -10,15 +10,13 @@ interface Message {
 
 interface ChatInterfaceProps {
   companionName?: string;
-  showTitle?: boolean;
 }
 
-export function ChatInterface({ companionName = "Gemma", showTitle = true }: ChatInterfaceProps) {
+export function ChatInterface({ companionName = "Gemma" }: ChatInterfaceProps) {
   const { data: session } = useSession();
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
-  const [minimal, setMinimal] = useState(false);
   const [ownerName, setOwnerName] = useState("Player");
   const [sessionId] = useState(() => "chat-" + Math.random().toString(36).substring(2, 9));
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -53,7 +51,7 @@ export function ChatInterface({ companionName = "Gemma", showTitle = true }: Cha
           companionName: companionName,
           ownerName: ownerName,
           ownerUserId: session?.user?.id,
-          minimal: minimal,
+          minimal: true,
         }),
       });
 
@@ -85,92 +83,71 @@ export function ChatInterface({ companionName = "Gemma", showTitle = true }: Cha
   };
 
   return (
-    <div className="flex flex-col h-full max-w-3xl mx-auto">
-      {showTitle && (
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <span className="w-2 h-6 bg-indigo-500 rounded-full"></span>
-            Chatting with {companionName}
-          </h2>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <div 
-                onClick={() => setMinimal(!minimal)}
-                className={`w-8 h-4 rounded-full relative transition-colors ${minimal ? "bg-indigo-600" : "bg-slate-700"}`}
-              >
-                <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${minimal ? "left-4.5" : "left-0.5"}`}></div>
-              </div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase group-hover:text-slate-300">Quick Mode</span>
-            </label>
-          </div>
-        </div>
-      )}
-
+    <div className="flex flex-col h-full bg-black border border-[#111] rounded-xl overflow-hidden shadow-2xl">
       <div 
         ref={scrollRef}
-        className="flex-grow bg-slate-900 border border-slate-800 rounded-3xl overflow-y-auto p-6 space-y-4 mb-6 min-h-[400px]"
+        className="flex-grow overflow-y-auto p-6 space-y-6 scrollbar-hide"
       >
         {messages.length === 0 && (
-          <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4 text-center">
-            <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center">
-              <span className="text-2xl">🤖</span>
-            </div>
-            <div>
-              <p className="font-bold text-slate-300">Your bot is ready</p>
-              <p className="text-xs">Say hello to start the conversation</p>
-            </div>
+          <div className="h-full flex flex-col items-center justify-center text-[#444] space-y-4">
+             <p className="text-xs font-mono uppercase tracking-[0.2em]">Ready for input</p>
           </div>
         )}
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+            <div className="flex items-center gap-2 mb-1 px-1">
+               <span className="text-[10px] font-bold text-[#444] uppercase tracking-widest">
+                 {msg.role === 'user' ? 'You' : msg.role === 'thought' ? 'Thinking' : msg.role === 'tool' ? 'System' : companionName}
+               </span>
+            </div>
             <div 
-              className={`max-w-[85%] rounded-2xl p-4 ${
+              className={`max-w-[90%] rounded-lg px-4 py-3 text-[14px] leading-relaxed ${
                 msg.role === "user" 
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/10" 
+                  ? "bg-white text-black font-medium" 
                   : msg.role === "thought"
-                  ? "bg-slate-800/50 border border-slate-700 text-slate-400 text-sm italic font-serif"
+                  ? "text-[#666] border-l border-[#333] pl-4 italic rounded-none"
                   : msg.role === "tool"
-                  ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono"
-                  : "bg-slate-800 text-slate-200 border border-slate-700/50"
+                  ? "bg-[#111] border border-[#333] text-emerald-500 font-mono text-[11px]"
+                  : "bg-black border border-[#333] text-white"
               }`}
             >
-              {msg.role === "thought" && <div className="text-[9px] uppercase tracking-widest font-sans mb-1 not-italic opacity-50 font-bold">Bot is thinking...</div>}
-              {msg.role === "tool" && <div className="text-[9px] uppercase tracking-widest font-sans mb-1 font-bold">Tool Execution</div>}
               <div className="whitespace-pre-wrap">{msg.text}</div>
             </div>
           </div>
         ))}
         {loading && (
-          <div className="flex justify-start">
-            <div className="bg-slate-800 border border-slate-700/50 text-slate-400 rounded-2xl p-4 flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"></div>
-              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
-              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:0.4s]"></div>
-            </div>
+          <div className="flex items-center gap-1.5 px-2">
+            <div className="w-1 h-1 bg-white rounded-full animate-pulse"></div>
+            <div className="w-1 h-1 bg-white rounded-full animate-pulse [animation-delay:0.2s]"></div>
+            <div className="w-1 h-1 bg-white rounded-full animate-pulse [animation-delay:0.4s]"></div>
           </div>
         )}
       </div>
 
-      <div className="relative">
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          placeholder="Type your message here..."
-          className="w-full bg-slate-900 border border-slate-800 rounded-2xl p-4 pr-16 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none h-20 text-slate-200 placeholder:text-slate-600"
-        />
-        <button
-          onClick={handleSend}
-          disabled={loading || !prompt.trim()}
-          className="absolute right-3 bottom-3 p-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 text-white rounded-xl transition-all shadow-lg shadow-indigo-500/20"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-        </button>
+      <div className="p-4 bg-[#050505] border-t border-[#111]">
+        <div className="relative flex items-center bg-black border border-[#333] rounded-lg focus-within:border-white transition-colors">
+          <input
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder="Command agent..."
+            className="flex-grow bg-transparent px-4 py-3 text-sm outline-none placeholder-[#444]"
+          />
+          <button
+            onClick={handleSend}
+            disabled={loading || !prompt.trim()}
+            className="px-4 text-white opacity-50 hover:opacity-100 disabled:opacity-20 transition-opacity"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 8L15 8M15 8L8 1M15 8L8 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

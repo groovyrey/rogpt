@@ -61,6 +61,7 @@ export default function Home() {
           
           <div className="flex items-center gap-4">
             <nav className="hidden md:flex items-center gap-6 mr-6 border-r border-slate-800 pr-6">
+              <Link href="/companion" className="text-sm font-medium text-slate-400 hover:text-indigo-400 transition-colors">Companion</Link>
               <Link href="/ds" className="text-sm font-medium text-slate-400 hover:text-indigo-400 transition-colors">Explorer</Link>
               <Link href="/test" className="text-sm font-medium text-slate-400 hover:text-indigo-400 transition-colors">Playground</Link>
             </nav>
@@ -129,7 +130,15 @@ export default function Home() {
         </section>
 
         {/* Quick Actions Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <ActionCard 
+            title="Companion Config" 
+            desc="Customize your AI NPC's name, personality, and core behaviors."
+            href="/companion"
+            icon={<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400"><path d="M12 2a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 14a7 7 0 0 0-7 7h14a7 7 0 0 0-7-7z"/></svg>}
+            label="Edit Persona"
+            disabled={!session}
+          />
           <ActionCard 
             title="NPC Playground" 
             desc="Chat with Gemma AI and test owner-loyalty protocols in real-time."

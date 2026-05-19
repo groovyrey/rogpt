@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
 interface Message {
   role: "user" | "model" | "thought";
@@ -9,6 +10,7 @@ interface Message {
 }
 
 export default function TestPage() {
+  const { data: session } = useSession();
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -16,6 +18,12 @@ export default function TestPage() {
   const [ownerName, setOwnerName] = useState("Alex");
   const [sessionId] = useState(() => "test-session-" + Math.random().toString(36).substring(2, 9));
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (session?.user?.name) {
+      setOwnerName(session.user.name);
+    }
+  }, [session]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -40,6 +48,8 @@ export default function TestPage() {
           sessionId: sessionId,
           companionName: "Gemma Test Bot",
           ownerName: ownerName,
+          // @ts-expect-error - id added in callbacks
+          ownerUserId: session?.user?.id,
           minimal: minimal,
         }),
       });

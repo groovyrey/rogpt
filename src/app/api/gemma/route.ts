@@ -82,11 +82,29 @@ export async function POST(req: Request) {
     const body = await req.json();
     const prompt = body.prompt;
     const sessionId = body.sessionId;
-    const companionName = body.companionName;
-    const ownerName = body.ownerName;
+    let companionName = body.companionName;
+    let ownerName = body.ownerName;
+    const ownerUserId = body.ownerUserId; // New: Roblox User ID of the owner
     const gameState = body.gameState; 
     const minimal = body.minimal !== undefined ? body.minimal : true;
     const incomingHistory = body.history;
+
+    // ---------------------------------------------------------
+    // FETCH SAVED COMPANION CONFIG
+    // ---------------------------------------------------------
+    let customPersona = "";
+    if (ownerUserId && redis) {
+      try {
+        const savedConfig: any = await redis.get(`companion_config:${ownerUserId}`);
+        if (savedConfig) {
+          if (savedConfig.name) companionName = savedConfig.name;
+          if (savedConfig.ownerName) ownerName = savedConfig.ownerName;
+          if (savedConfig.persona) customPersona = `\nCUSTOM INSTRUCTIONS:\n${savedConfig.persona}\n`;
+        }
+      } catch (redisError) {
+        console.error("Redis Error (fetching companion config):", redisError);
+      }
+    }
 
     console.log(`Gemma API Request for session [${sessionId}] with prompt:`, prompt, minimal ? "(Minimal Mode)" : "");
 
@@ -159,7 +177,7 @@ STRICT REASONING PROTOCOL:
 2. Final answer MUST be CONCISE, PLAIN TEXT, and no Markdown.
 
 PERSONA:
-You are an intelligent Roblox NPC.${nameContext}${ownerContext}
+You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
 - ALWAYS provide a NEW, UNIQUE text response for every prompt.
 - Acknowledge the player's latest message specifically.
 - MANDATORY: If the player tells you a new fact about themselves (like a nickname, preference, or goal), you MUST use the 'save_memory' tool immediately.

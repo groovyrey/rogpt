@@ -223,14 +223,14 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
     // ---------------------------------------------------------
     // SESSION & HISTORY MANAGEMENT
     // ---------------------------------------------------------
-    let history: { role: string; parts: { text?: string }[] }[] = [];
+    let history: any[] = [];
     if (Array.isArray(incomingHistory)) {
       history = incomingHistory;
     } else if (redis) {
       try {
         const storedHistory = await redis.get(sessionKey);
         if (Array.isArray(storedHistory)) {
-          history = storedHistory as { role: string; parts: { text?: string }[] }[];
+          history = storedHistory as any[];
         }
       } catch (redisError) {
         console.error("Redis Error (fetching history):", redisError);
@@ -241,8 +241,8 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
     const sanitizedHistory: Content[] = history
       .filter(m => m && typeof m === "object" && m.role && Array.isArray(m.parts))
       .map(m => ({
-        role: m.role,
-        parts: m.parts.map((p: Part): Part => {
+        role: m.role as string,
+        parts: (m.parts as any[]).map((p: any): Part => {
           if (p && typeof p === "object" && 'text' in p && typeof p.text === 'string') {
             return {
               text: p.text.replace(/<\|channel>thought[\s\S]*?(?:<channel\|>|$)/gi, '')
@@ -253,7 +253,7 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
             };
           }
           return p;
-        }).filter((p: Part) => p && typeof p === "object")
+        }).filter((p: any) => p && typeof p === "object")
       }));
 
     // CRITICAL: Google SDK requires history to start with role 'user'

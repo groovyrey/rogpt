@@ -235,12 +235,11 @@ export default function DataStorePage() {
                     </div>
                   )}
 
-                  {results && (
+                  {results !== null && results !== undefined && (
                     <pre className="text-emerald-400 whitespace-pre-wrap">
                       {JSON.stringify(results, null, 2)}
                     </pre>
-                  )}
-                </div>
+                  )}                </div>
               </div>
             </div>
 

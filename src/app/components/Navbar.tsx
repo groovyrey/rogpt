@@ -14,6 +14,7 @@ export function Navbar() {
     { name: "Console", href: "/chat" },
     { name: "Stats", href: "/stats" },
     { name: "Companion", href: "/bot" },
+    { name: "Game", href: "/game" },
   ];
 
   const isActive = (path: string) => pathname === path;
@@ -33,7 +34,7 @@ export function Navbar() {
           </Link>
           <div className="w-[1px] h-4 bg-[#333] rotate-[20deg] mx-1"></div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-white">Project</span>
+            <span className="text-sm font-bold uppercase tracking-widest text-[#444]">Uplink</span>
           </div>
         </div>
 

@@ -53,7 +53,7 @@ export default function Home() {
         <div className="lg:col-span-2 space-y-12">
           <section>
             <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444] mb-8 px-1">Control Dashboard</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Link href="/bot" className="glass-card p-8 rounded-2xl flex items-center gap-6 transition-all group">
                 <div className="w-14 h-14 bg-gradient-to-br from-[#111] to-black rounded-xl border border-[#222] flex items-center justify-center text-2xl group-hover:scale-105 transition-transform group-hover:border-[#444]">🤖</div>
                 <div>
@@ -66,6 +66,13 @@ export default function Home() {
                 <div>
                   <p className="text-[10px] text-[#555] font-bold uppercase tracking-widest mb-1">In-Game Wealth</p>
                   <p className="font-semibold text-lg tracking-tight text-[#eaeaea] group-hover:text-white">{playerData?.coins?.toLocaleString() || "0"} <span className="text-xs font-normal text-[#444]">Credits</span></p>
+                </div>
+              </Link>
+              <Link href="/game" className="glass-card p-8 rounded-2xl flex items-center gap-6 transition-all group">
+                <div className="w-14 h-14 bg-gradient-to-br from-[#111] to-black rounded-xl border border-[#222] flex items-center justify-center text-2xl group-hover:scale-105 transition-transform group-hover:border-[#444]">🎮</div>
+                <div>
+                  <p className="text-[10px] text-[#555] font-bold uppercase tracking-widest mb-1">Connected Game</p>
+                  <p className="font-semibold text-lg tracking-tight text-[#eaeaea] group-hover:text-white">Active Experience</p>
                 </div>
               </Link>
             </div>
@@ -132,23 +139,6 @@ export default function Home() {
             </div>
           </section>
 
-          <section>
-             <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444] mb-8 px-1">Experience Details</h2>
-             <div className="glass-card p-8 rounded-2xl space-y-6">
-               <div className="flex justify-between items-center text-[11px]">
-                 <span className="text-[#444] font-bold uppercase tracking-widest">Universe ID</span>
-                 <span className="font-mono text-[#888] bg-[#0a0a0a] px-2 py-0.5 rounded border border-[#111]">{process.env.NEXT_PUBLIC_ROGPT_UNIVERSE_ID || "10174033054"}</span>
-               </div>
-               <div className="flex justify-between items-center text-[11px]">
-                 <span className="text-[#444] font-bold uppercase tracking-widest">Link Protocol</span>
-                 <span className="text-[#eaeaea] font-medium uppercase tracking-tighter">Direct Sync</span>
-               </div>
-               <div className="flex justify-between items-center text-[11px]">
-                 <span className="text-[#444] font-bold uppercase tracking-widest">Region</span>
-                 <span className="text-[#eaeaea] font-medium uppercase tracking-tighter">Global Hub</span>
-               </div>
-             </div>
-          </section>
         </div>
       </div>
     </div>

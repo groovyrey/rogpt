@@ -165,9 +165,7 @@ export async function POST(req: Request) {
     
     // Stable key for authenticated users (Web), randomized/provided key for others (Roblox)
     const sessionKey = userId ? `chat_session:user_${userId}` : `chat_session:${sessionId || "global"}`;
-    const playerKey = sessionId?.startsWith("NPC_Chat_") 
-      ? `player_data:${sessionId.replace("NPC_Chat_", "")}` 
-      : null;
+    const playerKey = userId ? `player_data:${userId}` : null;
 
     // Fetch Player Memories from Redis
     let playerMemories: string[] = [];

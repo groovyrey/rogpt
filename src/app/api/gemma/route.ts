@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType, type Tool } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType, type Tool, type Content, type Part } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { redis } from "@/lib/redis";
 
@@ -231,11 +231,11 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
     }
 
     // SANITIZATION: Remove reasoning/thought tags and channels from history
-    const sanitizedHistory = history
+    const sanitizedHistory: Content[] = history
       .filter(m => m && typeof m === "object" && m.role && Array.isArray(m.parts))
       .map(m => ({
         role: m.role,
-        parts: m.parts.map((p: { text?: string }) => {
+        parts: m.parts.map((p: any): Part => {
           if (p && typeof p === "object" && p.text) {
             return {
               text: p.text.replace(/<\|channel>thought[\s\S]*?(?:<channel\|>|$)/gi, '')
@@ -246,7 +246,7 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
             };
           }
           return p;
-        }).filter((p: { text?: string }) => p && typeof p === "object")
+        }).filter((p: any) => p && typeof p === "object")
       }));
 
     // CRITICAL: Google SDK requires history to start with role 'user'
@@ -261,7 +261,7 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
     // We use generateContent with the full history + current prompt 
     // instead of the stateful startChat/sendMessage to prevent desync bugs.
     
-    const contents = [
+    const contents: Content[] = [
       ...sanitizedHistory,
       { role: "user", parts: [{ text: prompt }] }
     ];

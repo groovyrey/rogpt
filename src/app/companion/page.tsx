@@ -87,25 +87,25 @@ export default function CompanionPage() {
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="font-bold text-lg">C</span>
+              <span className="font-bold text-lg">B</span>
             </div>
-            <h1 className="font-bold text-xl tracking-tight">Companion <span className="text-slate-500 font-medium">Settings</span></h1>
+            <h1 className="font-bold text-xl tracking-tight">Bot <span className="text-slate-500 font-medium">Settings</span></h1>
           </div>
-          <Link href="/" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Back to Hub</Link>
+          <Link href="/" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Go Home</Link>
         </div>
       </nav>
 
       <main className="max-w-4xl mx-auto px-6 py-12">
         <div className="space-y-8">
           <header>
-            <h2 className="text-3xl font-extrabold tracking-tight mb-2">Configure Personality</h2>
-            <p className="text-slate-400">Define how your AI companion behaves and interacts with players.</p>
+            <h2 className="text-3xl font-extrabold tracking-tight mb-2">How your bot acts</h2>
+            <p className="text-slate-400">Decide how your AI bot talks and behaves with players.</p>
           </header>
 
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 space-y-6 shadow-xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Companion Name</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bot Name</label>
                 <input 
                   type="text" 
                   value={config.name}
@@ -120,7 +120,7 @@ export default function CompanionPage() {
                   type="text" 
                   value={config.ownerName}
                   onChange={(e) => setConfig({ ...config, ownerName: e.target.value })}
-                  placeholder={session?.user?.name || "Owner Name"}
+                  placeholder={session?.user?.name || "Your Name"}
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                 />
               </div>
@@ -128,16 +128,16 @@ export default function CompanionPage() {
 
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex justify-between">
-                <span>Core Persona & Instructions</span>
-                <span className="text-indigo-400 normal-case tracking-normal">Gemma 4 Optimized</span>
+                <span>Bot instructions</span>
+                <span className="text-indigo-400 normal-case tracking-normal">Gemma AI</span>
               </label>
               <textarea 
                 value={config.persona}
                 onChange={(e) => setConfig({ ...config, persona: e.target.value })}
-                placeholder="Describe your companion&apos;s personality... e.g. You are a helpful guide in the Crystal Forest. You are polite but slightly mysterious."
+                placeholder="Describe how your bot should act... e.g. You are a helpful guide. You are polite and friendly."
                 className="w-full h-48 bg-slate-800 border border-slate-700 rounded-2xl px-4 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none font-medium leading-relaxed"
               />
-              <p className="text-[10px] text-slate-500 italic">These instructions are used as the system prompt for the AI model.</p>
+              <p className="text-[10px] text-slate-500 italic">These notes tell the AI how to behave in your game.</p>
             </div>
 
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-800 mt-8">
@@ -164,23 +164,23 @@ export default function CompanionPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
               <h4 className="font-bold mb-4 flex items-center gap-2">
-                <span className="text-xl">🧠</span>
-                Memory Usage
+                <span className="text-xl">💾</span>
+                Save Data
               </h4>
-              <p className="text-sm text-slate-500 mb-6">Your companion currently stores player facts in the connected DataStore.</p>
+              <p className="text-sm text-slate-500 mb-6">Your bot stores things it learns about players in your game data.</p>
               <Link href="/ds" className="inline-flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-widest hover:text-indigo-300">
-                Manage Memories in Explorer
+                View Game Data
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
               </Link>
             </div>
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
               <h4 className="font-bold mb-4 flex items-center gap-2">
-                <span className="text-xl">🤖</span>
-                Model Status
+                <span className="text-xl">💬</span>
+                Chat Test
               </h4>
-              <p className="text-sm text-slate-500 mb-6">Running Gemma-4-31B-IT with minimal thinking tier enabled.</p>
+              <p className="text-sm text-slate-500 mb-6">Try talking to your bot right now to see how it works.</p>
               <Link href="/test" className="inline-flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-widest hover:text-indigo-300">
-                Launch Live Test
+                Start Chatting
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
               </Link>
             </div>

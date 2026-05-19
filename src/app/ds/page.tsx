@@ -54,11 +54,11 @@ export default function DataStorePage() {
         <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <span className="font-bold text-lg">D</span>
+              <span className="font-bold text-lg">G</span>
             </div>
-            <h1 className="font-bold text-xl tracking-tight">Open Cloud <span className="text-slate-500 font-medium">Dashboard</span></h1>
+            <h1 className="font-bold text-xl tracking-tight">Game Data <span className="text-slate-500 font-medium">Control</span></h1>
           </div>
-          <Link href="/" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Back to Dashboard</Link>
+          <Link href="/" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">Go Home</Link>
         </div>
       </nav>
 
@@ -73,21 +73,21 @@ export default function DataStorePage() {
               </h3>
               
               <div>
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Universe ID</label>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Game ID</label>
                 <input 
                   type="text" 
                   value={universeId}
                   onChange={(e) => setUniverseId(e.target.value)}
-                  placeholder="Universe ID"
+                  placeholder="Your Game ID"
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
                 />
               </div>
 
               <div className="pt-2">
-                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-800 pb-2">DataStore Service</h4>
+                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-800 pb-2">Save Files</h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Store Name</label>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">File Name</label>
                     <input 
                       type="text" 
                       value={datastoreName}
@@ -97,7 +97,7 @@ export default function DataStorePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Scope</label>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Folder (Scope)</label>
                     <input 
                       type="text" 
                       value={scope}
@@ -107,7 +107,7 @@ export default function DataStorePage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Key</label>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Player Key</label>
                     <input 
                       type="text" 
                       value={entryKey}
@@ -124,27 +124,27 @@ export default function DataStorePage() {
                     disabled={loading || !universeId}
                     className="bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-lg text-[10px] font-bold uppercase transition-colors disabled:opacity-50"
                   >
-                    List Stores
+                    All Files
                   </button>
                   <button 
                     onClick={() => callApi('list_keys')}
                     disabled={loading || !universeId || !datastoreName}
                     className="bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-lg text-[10px] font-bold uppercase transition-colors disabled:opacity-50"
                   >
-                    List Keys
+                    All Keys
                   </button>
                   <button 
                     onClick={() => callApi('get_entry')}
                     disabled={loading || !universeId || !datastoreName || !entryKey}
                     className="bg-indigo-600 hover:bg-indigo-500 text-white py-2 rounded-lg text-[10px] font-bold uppercase transition-colors col-span-2 disabled:opacity-50 shadow-lg shadow-indigo-500/20"
                   >
-                    Fetch Entry
+                    Load Info
                   </button>
                 </div>
               </div>
 
               <div className="pt-2 border-t border-slate-800">
-                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 pb-2">Messaging Service</h4>
+                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 pb-2">Live Alerts</h4>
                 <div className="space-y-3">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 mb-1">Topic</label>
@@ -162,7 +162,7 @@ export default function DataStorePage() {
                       type="text" 
                       value={msgBody}
                       onChange={(e) => setMsgBody(e.target.value)}
-                      placeholder="Hello from Web!"
+                      placeholder="Hello players!"
                       className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                     />
                   </div>
@@ -171,7 +171,7 @@ export default function DataStorePage() {
                     disabled={loading || !universeId || !topic || !msgBody}
                     className="w-full bg-slate-800 hover:bg-slate-700 text-indigo-400 py-2 rounded-lg text-[10px] font-bold uppercase transition-colors disabled:opacity-50 border border-indigo-500/20"
                   >
-                    Publish
+                    Send Now
                   </button>
                 </div>
               </div>
@@ -184,12 +184,12 @@ export default function DataStorePage() {
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col shadow-sm">
                 <h3 className="font-bold text-slate-200 mb-4 flex items-center gap-2">
                   <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                  Write Operation
+                  Edit Save
                 </h3>
                 <textarea 
                   value={value}
                   onChange={(e) => setValue(e.target.value)}
-                  placeholder='Enter JSON or String value to save...'
+                  placeholder='Type new info here...'
                   className="flex-grow min-h-[150px] bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none transition-all"
                 />
                 <button 
@@ -209,7 +209,7 @@ export default function DataStorePage() {
                   disabled={loading || !universeId || !datastoreName || !entryKey || !value}
                   className="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
                 >
-                  Save Entry to DataStore
+                  Save New Data
                 </button>
               </div>
 
@@ -217,7 +217,7 @@ export default function DataStorePage() {
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-slate-200 flex items-center gap-2">
                     <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
-                    Response Log
+                    Results
                   </h3>
                   {loading && <div className="w-3 h-3 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>}
                 </div>
@@ -231,7 +231,7 @@ export default function DataStorePage() {
                   
                   {!results && !error && (
                     <div className="h-full flex items-center justify-center text-slate-700 italic">
-                      Waiting for command...
+                      Waiting to load...
                     </div>
                   )}
 
@@ -245,9 +245,9 @@ export default function DataStorePage() {
 
             {/* Quick Actions / Tips */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <TipCard title="v1 API" desc="Using standard DataStore v1 endpoints for maximum compatibility." />
-              <TipCard title="Scope" desc="Default scope is 'global'. Players usually use 'global' or 'User_ID'." />
-              <TipCard title="Message" desc="MessagingService has a 1KB limit per message." />
+              <TipCard title="Safe Mode" desc="We use reliable save methods for your game data." />
+              <TipCard title="Folder" desc="Most games use the 'global' folder for player saves." />
+              <TipCard title="Alerts" desc="Alerts can send up to 1000 characters to your game." />
             </div>
           </div>
         </div>

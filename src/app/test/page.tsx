@@ -77,9 +77,9 @@ export default function TestPage() {
         <div className="max-w-5xl mx-auto px-6 min-h-[4rem] flex flex-col sm:flex-row sm:items-center justify-between py-4 sm:py-0 gap-4">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-              <span className="font-bold text-lg">T</span>
+              <span className="font-bold text-lg">C</span>
             </div>
-            <h1 className="font-bold text-xl tracking-tight whitespace-nowrap">Gemma <span className="hidden md:inline text-slate-500 font-medium">Test Playground</span></h1>
+            <h1 className="font-bold text-xl tracking-tight whitespace-nowrap">Bot <span className="hidden md:inline text-slate-500 font-medium">Chat</span></h1>
           </div>
           <div className="flex flex-wrap items-center gap-4 sm:gap-6">
             <div className="flex items-center gap-2">
@@ -98,11 +98,11 @@ export default function TestPage() {
               >
                 <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${minimal ? "left-6" : "left-1"}`}></div>
               </div>
-              <span className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Minimal</span>
+              <span className="text-xs font-medium text-slate-400 group-hover:text-slate-200 transition-colors">Quick Mode</span>
             </label>
             <Link href="/" className="text-sm text-slate-400 hover:text-slate-200 transition-colors ml-auto sm:ml-0">
               <span className="sm:hidden">Exit</span>
-              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="hidden sm:inline">Go Home</span>
             </Link>
           </div>
         </div>
@@ -114,9 +114,9 @@ export default function TestPage() {
           className="bg-slate-900 border border-slate-800 rounded-2xl h-[60vh] overflow-y-auto p-6 space-y-4 mb-6"
         >
           {messages.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-2">
-              <p>No messages yet. Start a conversation with Gemma!</p>
-              <p className="text-xs font-mono bg-slate-800 px-2 py-1 rounded">Model: gemma-4-26b-a4b-it</p>
+            <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-2 text-center">
+              <p>No messages yet. Say hello to your bot!</p>
+              <p className="text-[10px] font-mono bg-slate-800 px-2 py-1 rounded">Bot Status: Ready</p>
             </div>
           )}
           {messages.map((msg, i) => (
@@ -130,7 +130,7 @@ export default function TestPage() {
                     : "bg-slate-800 text-slate-200"
                 }`}
               >
-                {msg.role === "thought" && <div className="text-[10px] uppercase tracking-widest font-sans mb-1 not-italic opacity-50">Gemma&apos;s Reasoning</div>}
+                {msg.role === "thought" && <div className="text-[10px] uppercase tracking-widest font-sans mb-1 not-italic opacity-50">Bot is thinking...</div>}
                 <div className="whitespace-pre-wrap">{msg.text}</div>
               </div>
             </div>

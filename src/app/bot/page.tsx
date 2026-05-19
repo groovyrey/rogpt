@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
-import { ChatInterface } from "../components/ChatInterface";
 
 export default function BotPage() {
   const { data: session, status: authStatus } = useSession();
@@ -17,8 +16,11 @@ export default function BotPage() {
   const [message, setMessage] = useState({ text: "", type: "" });
   const [showSettings, setShowSettings] = useState(false);
   const [playerData, setPlayerData] = useState<any>(null);
+  const [isEditingStats, setIsEditingStats] = useState(false);
+  const [editStats, setEditStats] = useState({ coins: 0, weapon: "" });
 
   useEffect(() => {
+    // ... (fetch logic remains same)
     const fetchConfig = async () => {
       if (authStatus === "authenticated") {
         try {
@@ -33,6 +35,10 @@ export default function BotPage() {
           const playerData = await playerRes.json();
           if (playerData.success) {
             setPlayerData(playerData.data);
+            setEditStats({ 
+              coins: playerData.data.coins || 0, 
+              weapon: playerData.data.weapon || "Fist" 
+            });
           }
         } catch (err) {
           console.error("Failed to fetch bot config or player stats", err);
@@ -45,6 +51,30 @@ export default function BotPage() {
     };
     fetchConfig();
   }, [authStatus]);
+
+  const handleSaveStats = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/player", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editStats),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPlayerData(data.data);
+        setIsEditingStats(false);
+        setMessage({ text: "Game stats updated successfully!", type: "success" });
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err: any) {
+      setMessage({ text: err.message, type: "error" });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setMessage({ text: "", type: "" }), 3000);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -180,20 +210,57 @@ export default function BotPage() {
           <section className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-bold text-slate-500 uppercase tracking-[0.2em]">Live Game Stats</h2>
-              <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">CONNECTED</span>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setIsEditingStats(!isEditingStats)}
+                  className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 uppercase tracking-widest transition-colors"
+                >
+                  {isEditingStats ? "Cancel" : "Edit Stats"}
+                </button>
+                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">CONNECTED</span>
+              </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard label="Coins" value={playerData.coins?.toLocaleString() || "0"} icon="💰" />
-              <StatCard label="Current Weapon" value={playerData.weapon || "Fist"} icon="⚔️" />
-              <StatCard label="Inventory Items" value={playerData.inventory?.length || "0"} icon="🎒" />
-              <StatCard label="Experience" value="Level 1" icon="✨" />
-            </div>
+
+            {isEditingStats ? (
+              <div className="bg-slate-900/80 border border-indigo-500/30 p-6 rounded-2xl animate-in fade-in zoom-in-95 duration-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Coins</label>
+                    <input 
+                      type="number"
+                      value={editStats.coins}
+                      onChange={(e) => setEditStats({ ...editStats, coins: parseInt(e.target.value) || 0 })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Weapon</label>
+                    <input 
+                      type="text"
+                      value={editStats.weapon}
+                      onChange={(e) => setEditStats({ ...editStats, weapon: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                    />
+                  </div>
+                </div>
+                <button 
+                  onClick={handleSaveStats}
+                  disabled={saving}
+                  className="w-full sm:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20 text-sm"
+                >
+                  {saving ? "Saving to Roblox..." : "Push Updates to Game"}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <StatCard label="Coins" value={playerData.coins?.toLocaleString() || "0"} icon="💰" />
+                <StatCard label="Current Weapon" value={playerData.weapon || "Fist"} icon="⚔️" />
+                <StatCard label="Inventory Items" value={playerData.inventory?.length || "0"} icon="🎒" />
+                <StatCard label="Experience" value="Level 1" icon="✨" />
+              </div>
+            )}
           </section>
         )}
-
-        <section>
-          <ChatInterface companionName={config.name} />
-        </section>
       </main>
     </div>
   );

@@ -225,7 +225,6 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
       topK: 50,
       topP: 0.95,
       maxOutputTokens: 256,
-      // @ts-expect-error - Support for Gemma 4 thinking configuration
       thinkingConfig: minimal ? { thinkingLevel: 'minimal' } : undefined
     };
 

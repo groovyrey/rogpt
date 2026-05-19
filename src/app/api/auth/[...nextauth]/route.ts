@@ -13,6 +13,9 @@ export const authOptions: NextAuthOptions = {
       checks: ["pkce", "state"],
       clientId: process.env.ROBLOX_CLIENT_ID,
       clientSecret: process.env.ROBLOX_CLIENT_SECRET,
+      client: {
+        id_token_signed_response_alg: "ES256",
+      },
       profile(profile) {
         return {
           id: profile.sub,
@@ -26,7 +29,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, token }) {
       if (session.user) {
-        // @ts-expect-error
+        // @ts-expect-error - NextAuth Session user type doesn't include 'id' by default
         session.user.id = token.sub;
       }
       return session;

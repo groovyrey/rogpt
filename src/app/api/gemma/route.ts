@@ -9,6 +9,21 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const MAX_HISTORY = 5; // Reduced from 10 for faster response speed
 const SESSION_TTL = 3600; // 1 hour session expiry
 
+interface CompanionConfig {
+  name?: string;
+  ownerName?: string;
+  persona?: string;
+}
+
+interface PlayerData {
+  memories?: string[];
+}
+
+interface Emote {
+  name: string;
+  id: string;
+}
+
 // ---------------------------------------------------------
 // TOOL DEFINITIONS
 // ---------------------------------------------------------
@@ -95,7 +110,7 @@ export async function POST(req: Request) {
     let customPersona = "";
     if (ownerUserId && redis) {
       try {
-        const savedConfig: any = await redis.get(`companion_config:${ownerUserId}`);
+        const savedConfig = await redis.get(`companion_config:${ownerUserId}`) as CompanionConfig | null;
         if (savedConfig) {
           if (savedConfig.name) companionName = savedConfig.name;
           if (savedConfig.ownerName) ownerName = savedConfig.ownerName;
@@ -137,7 +152,7 @@ export async function POST(req: Request) {
     let playerMemories: string[] = [];
     if (playerKey && redis) {
       try {
-        const storedData: any = await redis.get(playerKey);
+        const storedData = await redis.get(playerKey) as PlayerData | null;
         if (storedData) {
           playerMemories = storedData.memories || [];
           if (playerMemories.length > 0) {
@@ -158,7 +173,7 @@ export async function POST(req: Request) {
       if (timeOfDay) environmentContext += `- Time of Day: ${timeOfDay}\n`;
       
       if (availableEmotes && Array.isArray(availableEmotes)) {
-        emotesContext = "\nAVAILABLE EMOTES:\n" + availableEmotes.map((e: any) => `${e.name}: ${e.id}`).join("\n");
+        emotesContext = "\nAVAILABLE EMOTES:\n" + availableEmotes.map((e: Emote) => `${e.name}: ${e.id}`).join("\n");
       }
 
       if (availableTools && Array.isArray(availableTools) && availableTools.length > 0) {
@@ -201,14 +216,14 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
     // ---------------------------------------------------------
     // SESSION & HISTORY MANAGEMENT
     // ---------------------------------------------------------
-    let history: any[] = [];
+    let history: { role: string; parts: { text?: string }[] }[] = [];
     if (Array.isArray(incomingHistory)) {
       history = incomingHistory;
     } else if (redis) {
       try {
         const storedHistory = await redis.get(sessionKey);
         if (Array.isArray(storedHistory)) {
-          history = storedHistory;
+          history = storedHistory as { role: string; parts: { text?: string }[] }[];
         }
       } catch (redisError) {
         console.error("Redis Error (fetching history):", redisError);
@@ -220,7 +235,7 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
       .filter(m => m && typeof m === "object" && m.role && Array.isArray(m.parts))
       .map(m => ({
         role: m.role,
-        parts: m.parts.map((p: any) => {
+        parts: m.parts.map((p: { text?: string }) => {
           if (p && typeof p === "object" && p.text) {
             return {
               text: p.text.replace(/<\|channel>thought[\s\S]*?(?:<channel\|>|$)/gi, '')
@@ -231,7 +246,7 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
             };
           }
           return p;
-        }).filter((p: any) => p && typeof p === "object")
+        }).filter((p: { text?: string }) => p && typeof p === "object")
       }));
 
     // CRITICAL: Google SDK requires history to start with role 'user'
@@ -264,15 +279,16 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
         });
         result = generationResult;
         break; // Success
-      } catch (aiError: any) {
+      } catch (aiError: unknown) {
+        const error = aiError as Error;
         retryCount++;
         if (retryCount > MAX_RETRIES) {
-          console.error("AI Generation Error (Max Retries Exceeded):", aiError);
-          return NextResponse.json({ error: "AI service failed after multiple retries: " + (aiError.message || "Unknown error") }, { status: 500 });
+          console.error("AI Generation Error (Max Retries Exceeded):", error);
+          return NextResponse.json({ error: "AI service failed after multiple retries: " + (error.message || "Unknown error") }, { status: 500 });
         }
         
         const delay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount - 1);
-        console.warn(`AI Generation Error (Attempt ${retryCount}): ${aiError.message}. Retrying in ${delay}ms...`);
+        console.warn(`AI Generation Error (Attempt ${retryCount}): ${error.message}. Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -285,17 +301,17 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
     // ---------------------------------------------------------
     // TOOL EXECUTION LOOP & TEXT ACCUMULATION
     // ---------------------------------------------------------
-    const clientToolCalls: any[] = [];
+    const clientToolCalls: { name: string; args: Record<string, unknown> }[] = [];
     let fullText = "";
     let extractedThoughts = "";
     
-    const processResponseParts = (resp: any) => {
+    const processResponseParts = (resp: { candidates?: { content?: { parts?: { text?: string; thought?: string }[] } }[] }) => {
       const candidates = resp.candidates || [];
       for (const candidate of candidates) {
         const parts = candidate.content?.parts || [];
         for (const part of parts) {
-          if ((part as any).thought) {
-            const thoughtText = (part as any).text || (part as any).thought;
+          if (part.thought) {
+            const thoughtText = part.text || part.thought;
             if (typeof thoughtText === 'string') extractedThoughts += thoughtText;
           } else if (part.text) {
             fullText += (fullText && !fullText.endsWith(" ") ? " " : "") + part.text;
@@ -313,11 +329,12 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
 
     while (functionCalls.length > 0 && loopCount < MAX_TOOL_LOOPS) {
       loopCount++;
-      const toolResponses: any[] = [];
+      const toolResponses: { functionResponse: { name: string; response: Record<string, unknown> } }[] = [];
 
       for (const call of functionCalls) {
         if (call.name === "save_memory") {
-          const memory = (call.args as any).memory;
+          const args = call.args as { memory: string };
+          const memory = args.memory;
           console.log(`[Session ${sessionId}] AI wants to save memory:`, memory);
           let isDuplicate = false;
 
@@ -345,12 +362,13 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
             }
           });
         } else if (call.name === "play_emote") {
-          const emoteId = (call.args as any).emoteId;
-          const isDuplicate = clientToolCalls.some(c => c.name === "play_emote" && (c.args as any).emoteId === emoteId);
+          const args = call.args as { emoteId: string };
+          const emoteId = args.emoteId;
+          const isDuplicate = clientToolCalls.some(c => c.name === "play_emote" && (c.args as { emoteId: string }).emoteId === emoteId);
 
           if (!isDuplicate) {
             console.log(`[Session ${sessionId}] AI wants to play emote:`, emoteId);
-            clientToolCalls.push(call);
+            clientToolCalls.push({ name: call.name, args: call.args as Record<string, unknown> });
             toolResponses.push({
               functionResponse: {
                 name: "play_emote",
@@ -366,10 +384,11 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
             });
           }
         } else if (call.name === "give_tool") {
-          const toolName = (call.args as any).toolName;
+          const args = call.args as { toolName: string };
+          const toolName = args.toolName;
           console.log(`[Session ${sessionId}] AI wants to give tool:`, toolName);
           
-          clientToolCalls.push(call);
+          clientToolCalls.push({ name: call.name, args: call.args as Record<string, unknown> });
           toolResponses.push({
             functionResponse: {
               name: "give_tool",
@@ -474,18 +493,18 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
       // contents contains: [sanitizedHistory, UserTurn, (ModelCall, FunctionResp)*, FinalModelTurn]
       const newTurns = contents.slice(sanitizedHistory.length);
 
-      let currentHistory: any[] = incomingHistory || [];
+      let currentHistory: { role: string; parts: { text?: string }[] }[] = incomingHistory || [];
       if (!incomingHistory) {
         try {
           const stored = await redis.get(sessionKey);
-          if (Array.isArray(stored)) currentHistory = stored;
+          if (Array.isArray(stored)) currentHistory = stored as { role: string; parts: { text?: string }[] }[];
         } catch (err) {
           console.error("Error reading history from Redis:", err);
         }
       }
 
       // Add the new turns (User message, model calls, function responses, and final model text)
-      currentHistory.push(...newTurns);
+      currentHistory.push(...newTurns as { role: string; parts: { text?: string }[] }[]);
       
       // Limit history by turn count (number of user messages)
       const userMessageCount = currentHistory.filter(m => m.role === "user").length;
@@ -517,11 +536,12 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
       toolCalls: clientToolCalls,
     });
   } catch (error) {
+    const err = error as Error;
     console.error("Gemma API Error Detail:", {
-      message: (error as any).message,
-      stack: (error as any).stack,
-      name: (error as any).name
+      message: err.message,
+      stack: err.stack,
+      name: err.name
     });
-    return NextResponse.json({ error: (error as any).message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
   }
 }

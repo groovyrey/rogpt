@@ -22,7 +22,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Error processing Roblox request:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error: ' + ((error as any).message || 'Unknown error') },
+      { success: false, error: 'Internal server error: ' + ((error as Error).message || 'Unknown error') },
       { status: 500 }
     );
   }

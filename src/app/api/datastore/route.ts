@@ -37,6 +37,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 });
   } catch (error) {
     console.error("DataStore API Error:", error);
-    return NextResponse.json({ success: false, error: "Server error: " + ((error as any).message || "Unknown error") }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Server error: " + ((error as Error).message || "Unknown error") }, { status: 500 });
   }
 }

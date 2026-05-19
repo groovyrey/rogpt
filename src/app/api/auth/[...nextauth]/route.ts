@@ -8,7 +8,7 @@ export const authOptions: NextAuthOptions = {
       name: "Roblox",
       type: "oauth",
       wellKnown: "https://apis.roblox.com/oauth/.well-known/openid-configuration",
-      authorization: { params: { scope: "openid profile" } },
+      authorization: { params: { scope: "openid profile email asset:read group:read" } },
       idToken: true,
       checks: ["pkce", "state"],
       clientId: process.env.ROBLOX_CLIENT_ID,

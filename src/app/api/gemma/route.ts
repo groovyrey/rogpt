@@ -107,7 +107,9 @@ export async function POST(req: Request) {
     let companionName = body.companionName;
     let ownerName = body.ownerName;
     // Use session userId if available (web requests), fallback to body for Roblox requests
-    const userId = session?.user?.id || body.ownerUserId;
+    // Robust check for Roblox sessionId format: "NPC_Chat_12345"
+    const robloxUserId = sessionId?.startsWith("NPC_Chat_") ? sessionId.replace("NPC_Chat_", "") : null;
+    const userId = session?.user?.id || body.ownerUserId || robloxUserId;
     const gameState = body.gameState; 
     const minimal = body.minimal !== undefined ? body.minimal : true;
     const incomingHistory = body.history;
@@ -118,11 +120,21 @@ export async function POST(req: Request) {
     let customPersona = "";
     if (userId && redis) {
       try {
+        // 1. Try fetching from the Web Bot Config (Primary Persona source)
         const savedConfig = await redis.get(`companion_config:${userId}`) as CompanionConfig | null;
+        
+        // 2. Try fetching from the Roblox DataStore Sync (Primary Name source)
+        const datastoreConfig = await redis.get(`datastore:Companion_${userId}`) as any;
+
         if (savedConfig) {
           if (savedConfig.name) companionName = savedConfig.name;
           if (savedConfig.ownerName) ownerName = savedConfig.ownerName;
           if (savedConfig.persona) customPersona = `\nCUSTOM INSTRUCTIONS:\n${savedConfig.persona}\n`;
+        }
+
+        // If Roblox has a more recent name or specific data, use it
+        if (datastoreConfig && datastoreConfig.name && !savedConfig?.name) {
+          companionName = datastoreConfig.name;
         }
       } catch (redisError) {
         console.error("Redis Error (fetching companion config):", redisError);

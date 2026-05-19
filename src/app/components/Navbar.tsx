@@ -14,6 +14,7 @@ export function Navbar() {
   const navLinks = [
     { name: "Bot", href: "/bot" },
     { name: "Chat", href: "/chat" },
+    { name: "Test", href: "/test" },
   ];
 
   const isActive = (path: string) => pathname === path;

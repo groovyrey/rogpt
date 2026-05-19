@@ -84,13 +84,20 @@ const tools: Tool[] = [
   }
 ];
 
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]/route";
+
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
     const authHeader = req.headers.get("Authorization");
     const secret = process.env.ROBLOX_API_KEY || "roblox-to-gpt-secret-123";
     
-    if (authHeader !== `Bearer ${secret}`) {
-      console.warn("Unauthorized request attempt");
+    // Allow either the secret API key OR a valid user session
+    const isAuthorized = (authHeader === `Bearer ${secret}`) || !!session;
+    
+    if (!isAuthorized) {
+      console.warn("Unauthorized request attempt (no valid key or session)");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -235,8 +242,8 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
       .filter(m => m && typeof m === "object" && m.role && Array.isArray(m.parts))
       .map(m => ({
         role: m.role,
-        parts: m.parts.map((p: any): Part => {
-          if (p && typeof p === "object" && p.text) {
+        parts: m.parts.map((p: Part): Part => {
+          if (p && typeof p === "object" && 'text' in p && typeof p.text === 'string') {
             return {
               text: p.text.replace(/<\|channel>thought[\s\S]*?(?:<channel\|>|$)/gi, '')
                           .replace(/<(?:thought|think|reasoning)>[\s\S]*?(?:<\/(?:thought|think|reasoning)>|$)/gi, '')
@@ -246,7 +253,7 @@ You are an intelligent Roblox NPC.${nameContext}${ownerContext}${customPersona}
             };
           }
           return p;
-        }).filter((p: any) => p && typeof p === "object")
+        }).filter((p: Part) => p && typeof p === "object")
       }));
 
     // CRITICAL: Google SDK requires history to start with role 'user'

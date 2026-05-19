@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -55,10 +56,12 @@ export function Navbar() {
                 <p className="text-xs font-semibold text-slate-200">{session.user?.name?.split(' ')[0]}</p>
               </div>
               {session.user?.image && (
-                <img 
+                <Image 
                   src={session.user.image} 
                   alt="Profile" 
-                  className="w-8 h-8 rounded-lg border border-slate-700"
+                  width={32}
+                  height={32}
+                  className="rounded-lg border border-slate-700"
                 />
               )}
               <button 

@@ -1,6 +1,7 @@
 "use client";
 
 import { signIn, signOut, useSession } from "next-auth/react";
+import Image from "next/image";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -36,20 +37,53 @@ export default function Home() {
               {session.user?.ageBracket && (
                 <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 rounded-md text-[10px] font-bold uppercase tracking-tight">
                   {/* @ts-expect-error - Custom session field */}
-                  {session.user.ageBracket.replace('age_', '').replace('_', ' ')}
+                  {session.user.ageBracket.toString().replace('age_', '').replace('_', ' ')}
                 </span>
               )}
             </div>
 
             {session.user?.image && (
               <div className="flex justify-center">
-                <img 
+                <Image 
                   src={session.user.image} 
                   alt="Profile" 
-                  className="w-20 h-20 rounded-2xl border-2 border-slate-800 shadow-md"
+                  width={80}
+                  height={80}
+                  className="rounded-2xl border-2 border-slate-800 shadow-md"
                 />
               </div>
             )}
+
+            {/* Permissions Status */}
+            <div className="pt-2 border-t border-slate-800/50">
+              <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-3">Permissions Active</p>
+              <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400 font-medium text-left">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
+                  Asset Mgmt
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
+                  Group Control
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
+                  Game Updates
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
+                  Luau Logic
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
+                  Live Alerts
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
+                  Commerce
+                </div>
+              </div>
+            </div>
 
             <div className="pt-4">
               <button 

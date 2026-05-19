@@ -12,9 +12,8 @@ export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navLinks = [
-    { name: "Bot", href: "/companion" },
-    { name: "Game Data", href: "/ds" },
-    { name: "Chat", href: "/test" },
+    { name: "Bot", href: "/bot" },
+    { name: "Chat", href: "/chat" },
   ];
 
   const isActive = (path: string) => pathname === path;

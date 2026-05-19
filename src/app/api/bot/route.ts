@@ -14,7 +14,6 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // @ts-expect-error - session.user.id added in callbacks
   const userId = session.user.id;
   const configKey = `companion_config:${userId}`;
 
@@ -22,7 +21,7 @@ export async function GET() {
     if (!redis) throw new Error("Redis not configured");
     const config = await redis.get(configKey);
     return NextResponse.json(config || {
-      name: "Gemma",
+      name: session.user.name || "Gemma",
       persona: "You are an intelligent Roblox NPC. You should be loyal and helpful to your owner.",
       ownerName: session.user.name || "Owner"
     });
@@ -38,7 +37,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // @ts-expect-error - session.user.id added in callbacks
   const userId = session.user.id;
   const configKey = `companion_config:${userId}`;
 

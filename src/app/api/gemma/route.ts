@@ -106,7 +106,8 @@ export async function POST(req: Request) {
     const sessionId = body.sessionId;
     let companionName = body.companionName;
     let ownerName = body.ownerName;
-    const ownerUserId = body.ownerUserId; // New: Roblox User ID of the owner
+    // Use session userId if available (web requests), fallback to body for Roblox requests
+    const userId = session?.user?.id || body.ownerUserId;
     const gameState = body.gameState; 
     const minimal = body.minimal !== undefined ? body.minimal : true;
     const incomingHistory = body.history;
@@ -115,9 +116,9 @@ export async function POST(req: Request) {
     // FETCH SAVED COMPANION CONFIG
     // ---------------------------------------------------------
     let customPersona = "";
-    if (ownerUserId && redis) {
+    if (userId && redis) {
       try {
-        const savedConfig = await redis.get(`companion_config:${ownerUserId}`) as CompanionConfig | null;
+        const savedConfig = await redis.get(`companion_config:${userId}`) as CompanionConfig | null;
         if (savedConfig) {
           if (savedConfig.name) companionName = savedConfig.name;
           if (savedConfig.ownerName) ownerName = savedConfig.ownerName;
@@ -150,7 +151,8 @@ export async function POST(req: Request) {
     let toolsContext = "";
     let environmentContext = "";
     
-    const sessionKey = `chat_session:${sessionId || "global"}`;
+    // Stable key for authenticated users (Web), randomized/provided key for others (Roblox)
+    const sessionKey = userId ? `chat_session:user_${userId}` : `chat_session:${sessionId || "global"}`;
     const playerKey = sessionId?.startsWith("NPC_Chat_") 
       ? `player_data:${sessionId.replace("NPC_Chat_", "")}` 
       : null;

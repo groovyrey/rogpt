@@ -13,7 +13,7 @@ export function Navbar() {
     { name: "Overview", href: "/" },
     { name: "Console", href: "/chat" },
     { name: "Stats", href: "/stats" },
-    { name: "Agent", href: "/bot" },
+    { name: "Companion", href: "/bot" },
   ];
 
   const isActive = (path: string) => pathname === path;
@@ -24,10 +24,12 @@ export function Navbar() {
       <div className="max-w-screen-xl mx-auto px-6 h-14 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 group">
-            <svg width="24" height="24" viewBox="0 0 76 65" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-white">
-               <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" fill="currentColor"/>
-            </svg>
-            <span className="font-semibold text-[15px] tracking-tight">roGPT</span>
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center group-hover:bg-[#eaeaea] transition-colors">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-black">
+                 <path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM12 4V12L18 12M12 20C7.58172 20 4 16.4183 4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12C20 16.4183 16.4183 20 12 20Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="font-bold text-[16px] tracking-tight text-white ml-1">roGPT</span>
           </Link>
           <div className="w-[1px] h-4 bg-[#333] rotate-[20deg] mx-1"></div>
           <div className="flex items-center gap-2">

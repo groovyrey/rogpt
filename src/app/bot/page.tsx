@@ -56,47 +56,53 @@ export default function BotPage() {
       {/* Agent Settings */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-12">
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold tracking-tight">Agent Settings</h2>
-          <p className="text-sm text-[#888] leading-relaxed">
-            Configure how your AI assistant identifies and behaves across your Roblox experiences. 
-            Changes are applied in real-time to all active NPC instances.
+          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444] mb-2 px-1">Personality Sync</h2>
+          <h3 className="text-3xl font-bold tracking-tighter text-white">NPC Identity</h3>
+          <p className="text-[15px] text-[#666] leading-relaxed max-w-xs">
+            Personalize your in-game companion's name and behavioral instructions. Changes take effect instantly in your Roblox server.
           </p>
+          <div className="pt-4">
+             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/5 border border-indigo-500/10">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">Neural Uplink Online</span>
+             </div>
+          </div>
         </div>
-        <div className="md:col-span-2 space-y-8 p-8 bg-[#000] border border-[#333] rounded-xl shadow-sm">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <Field label="Agent Name">
+        <div className="md:col-span-2 space-y-8 p-10 glass-card rounded-3xl shadow-2xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
+            <Field label="In-Game NPC Name">
                <input 
                 type="text" 
                 value={config.name}
                 onChange={(e) => setConfig({ ...config, name: e.target.value })}
-                className="w-full bg-black border border-[#333] rounded-md px-3 py-2 text-sm focus:border-white outline-none transition-colors"
+                className="w-full bg-[#050505] border border-[#222] rounded-xl px-4 py-3 text-sm focus:border-[#444] outline-none transition-all placeholder-[#333]"
               />
             </Field>
-            <Field label="Owner Name">
+            <Field label="Authorized Owner">
                <input 
                 type="text" 
                 value={config.ownerName}
                 onChange={(e) => setConfig({ ...config, ownerName: e.target.value })}
-                className="w-full bg-black border border-[#333] rounded-md px-3 py-2 text-sm focus:border-white outline-none transition-colors"
+                className="w-full bg-[#050505] border border-[#222] rounded-xl px-4 py-3 text-sm focus:border-[#444] outline-none transition-all placeholder-[#333]"
               />
             </Field>
           </div>
-          <Field label="System Instructions (Persona)">
+          <Field label="NPC Behavioral Instructions">
             <textarea 
               value={config.persona}
               onChange={(e) => setConfig({ ...config, persona: e.target.value })}
-              className="w-full h-48 bg-black border border-[#333] rounded-md px-3 py-2 text-sm focus:border-white outline-none transition-colors resize-none font-mono"
-              placeholder="e.g. You are a helpful guide in the Roblox world..."
+              className="w-full h-56 bg-[#050505] border border-[#222] rounded-xl px-4 py-3 text-sm focus:border-[#444] outline-none transition-all resize-none font-mono placeholder-[#333]"
+              placeholder="Tell your NPC how to act (e.g. 'You are my loyal bodyguard...')"
             />
           </Field>
-          <div className="pt-6 border-t border-[#333] flex items-center justify-between">
-            <p className={`text-xs ${message.type === 'success' ? 'text-emerald-500' : 'text-rose-500'}`}>{message.text}</p>
+          <div className="pt-8 border-t border-[#111] flex items-center justify-between">
+            <p className={`text-[11px] font-medium tracking-wide ${message.type === 'success' ? 'text-emerald-500' : 'text-rose-500'}`}>{message.text}</p>
             <button 
               onClick={handleSaveBot}
               disabled={saving}
-              className="px-6 py-2 bg-white text-black text-sm font-semibold rounded hover:bg-[#eaeaea] transition-all disabled:opacity-50"
+              className="px-8 py-2.5 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-[#ccc] transition-all disabled:opacity-50 active:scale-95"
             >
-              {saving ? "Saving..." : "Save Agent"}
+              {saving ? "Syncing..." : "Sync to Game"}
             </button>
           </div>
         </div>

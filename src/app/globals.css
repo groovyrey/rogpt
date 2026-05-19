@@ -32,11 +32,28 @@ html, body {
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-image: radial-gradient(circle at 50% -20%, #111 0%, transparent 50%);
+  background-attachment: fixed;
 }
 
 ::selection {
   background: var(--selection);
   color: white;
+}
+
+.bg-radial-gradient {
+  background-image: radial-gradient(circle at 50% 50%, #050505 0%, #000 100%);
+}
+
+.glass-card {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* Custom Scrollbar */
@@ -52,4 +69,14 @@ html, body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accents-3);
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
 }

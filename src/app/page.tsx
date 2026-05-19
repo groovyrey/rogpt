@@ -27,18 +27,18 @@ export default function Home() {
   if (!session) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 text-center">
-        <div className="mb-8 p-4 bg-white rounded-2xl">
-           <svg width="40" height="40" viewBox="0 0 76 65" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-black">
-               <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" fill="currentColor"/>
+        <div className="mb-8 p-5 bg-white rounded-3xl shadow-[0_0_50px_rgba(255,255,255,0.1)] animate-float">
+           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-black">
+               <path d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM12 4V12L18 12M12 20C7.58172 20 4 16.4183 4 12C4 7.58172 7.58172 4 12 4C16.4183 4 20 7.58172 20 12C20 16.4183 16.4183 20 12 20Z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight mb-4">Connect to roGPT</h1>
-        <p className="text-[#888] max-w-sm mb-10 text-[15px] leading-relaxed">
-          Manage your Roblox AI NPCs and monitor game statistics in a unified dashboard.
+        <h1 className="text-4xl font-bold tracking-tighter mb-4 text-white">Your Roblox Companion, Uplinked.</h1>
+        <p className="text-[#888] max-w-sm mb-10 text-[16px] leading-relaxed">
+          The official remote interface for your personal roGPT NPC. Control their personality and sync your game progress in real-time.
         </p>
         <button 
           onClick={() => signIn("roblox")}
-          className="px-10 py-3 bg-white text-black font-semibold rounded-lg hover:bg-[#eaeaea] transition-all"
+          className="px-10 py-4 bg-white text-black font-bold uppercase tracking-widest text-xs rounded-xl hover:bg-[#eaeaea] transition-all shadow-xl active:scale-95"
         >
           Login with Roblox
         </button>
@@ -50,67 +50,79 @@ export default function Home() {
     <div className="max-w-screen-xl mx-auto px-6 py-12">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Section */}
-        <div className="lg:col-span-2 space-y-8">
+        <div className="lg:col-span-2 space-y-12">
           <section>
-            <h2 className="text-xl font-semibold mb-6 text-white tracking-tight">Overview</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Link href="/bot" className="p-6 bg-[#000] border border-[#333] rounded-xl flex items-center gap-5 hover:border-[#555] transition-all group">
-                <div className="w-12 h-12 bg-[#111] rounded-full border border-[#333] flex items-center justify-center text-xl group-hover:scale-110 transition-transform">🤖</div>
+            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444] mb-8 px-1">Control Dashboard</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <Link href="/bot" className="glass-card p-8 rounded-2xl flex items-center gap-6 transition-all group">
+                <div className="w-14 h-14 bg-gradient-to-br from-[#111] to-black rounded-xl border border-[#222] flex items-center justify-center text-2xl group-hover:scale-105 transition-transform group-hover:border-[#444]">🤖</div>
                 <div>
-                  <p className="text-[10px] text-[#888] font-bold uppercase tracking-widest mb-0.5">Agent Status</p>
-                  <p className="font-semibold text-[15px]">{botConfig?.name || "Initializing..."}</p>
+                  <p className="text-[10px] text-[#555] font-bold uppercase tracking-widest mb-1">NPC Profile</p>
+                  <p className="font-semibold text-lg tracking-tight text-[#eaeaea] group-hover:text-white">{botConfig?.name || "Initializing..."}</p>
                 </div>
               </Link>
-              <Link href="/stats" className="p-6 bg-[#000] border border-[#333] rounded-xl flex items-center gap-5 hover:border-[#555] transition-all group">
-                <div className="w-12 h-12 bg-[#111] rounded-full border border-[#333] flex items-center justify-center text-xl group-hover:scale-110 transition-transform">💰</div>
+              <Link href="/stats" className="glass-card p-8 rounded-2xl flex items-center gap-6 transition-all group">
+                <div className="w-14 h-14 bg-gradient-to-br from-[#111] to-black rounded-xl border border-[#222] flex items-center justify-center text-2xl group-hover:scale-105 transition-transform group-hover:border-[#444]">💰</div>
                 <div>
-                  <p className="text-[10px] text-[#888] font-bold uppercase tracking-widest mb-0.5">Total Coins</p>
-                  <p className="font-semibold text-[15px]">{playerData?.coins?.toLocaleString() || "0"}</p>
+                  <p className="text-[10px] text-[#555] font-bold uppercase tracking-widest mb-1">In-Game Wealth</p>
+                  <p className="font-semibold text-lg tracking-tight text-[#eaeaea] group-hover:text-white">{playerData?.coins?.toLocaleString() || "0"} <span className="text-xs font-normal text-[#444]">Credits</span></p>
                 </div>
               </Link>
             </div>
           </section>
 
           <section>
-            <div className="flex items-center justify-between mb-6">
-               <h2 className="text-xl font-semibold text-white tracking-tight">Active Agent</h2>
-               <Link href="/bot" className="text-xs font-bold uppercase tracking-widest text-[#888] hover:text-white transition-colors">Manage</Link>
+            <div className="flex items-center justify-between mb-8 px-1">
+               <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444]">In-Experience Presence</h2>
+               <Link href="/bot" className="text-[10px] font-bold uppercase tracking-widest text-[#444] hover:text-[#888] transition-colors">Personalize NPC</Link>
             </div>
-            <div className="p-8 bg-[#000] border border-[#333] rounded-xl space-y-6">
-              <div className="flex items-start justify-between">
-                <div className="space-y-1">
-                  <p className="text-2xl font-bold tracking-tight">{botConfig?.name || "Gemma"}</p>
-                  <p className="text-sm text-[#888]">Primary NPC Assistant</p>
-                </div>
-                <div className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[10px] font-bold uppercase rounded-full border border-emerald-500/20">
-                  Online
-                </div>
+            <div className="glass-card p-10 rounded-3xl space-y-8 relative overflow-hidden border-[#222]">
+              <div className="absolute top-0 right-0 p-8">
+                 <div className="px-3 py-1 bg-emerald-500/5 text-emerald-500 text-[9px] font-bold uppercase tracking-widest rounded-full border border-emerald-500/10 flex items-center gap-2">
+                   <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></div>
+                   Linked to Server
+                 </div>
               </div>
-              <div className="text-[15px] text-[#888] leading-relaxed italic border-l-2 border-[#333] pl-4 py-1">
-                &quot;{botConfig?.persona || "No instructions set."}&quot;
+              
+              <div className="space-y-2">
+                <p className="text-3xl font-bold tracking-tighter text-white">{botConfig?.name || "Gemma"}</p>
+                <p className="text-[13px] text-[#666] font-medium tracking-tight">Your Custom Roblox NPC Companion</p>
+              </div>
+
+              <div className="text-[16px] text-[#888] leading-[1.6] italic border-l border-[#222] pl-6 py-2 max-w-xl">
+                &quot;{botConfig?.persona || "Awaiting your directives."}&quot;
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                 <div className="px-4 py-2 rounded-lg bg-[#080808] border border-[#111] text-[11px] font-mono text-[#444]">
+                   STATUS: READY
+                 </div>
+                 <div className="px-4 py-2 rounded-lg bg-[#080808] border border-[#111] text-[11px] font-mono text-[#444]">
+                   SYNC: ACTIVE
+                 </div>
               </div>
             </div>
           </section>
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-8">
+        <div className="space-y-12">
           <section>
-            <h2 className="text-xl font-semibold mb-6">User</h2>
-            <div className="p-6 bg-[#000] border border-[#333] rounded-xl space-y-6">
-               <div className="flex items-center gap-4">
+            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444] mb-8 px-1">Operator Profile</h2>
+            <div className="glass-card p-8 rounded-2xl space-y-8">
+               <div className="flex items-center gap-5">
                  {session.user?.image && (
                    <Image 
                      src={session.user.image} 
                      alt="Avatar" 
-                     width={48}
-                     height={48}
-                     className="rounded-full border border-[#333]"
+                     width={56}
+                     height={56}
+                     className="rounded-xl border border-[#222] shadow-2xl"
                    />
                  )}
                  <div>
-                   <p className="font-semibold">{session.user?.name}</p>
-                   <p className="text-xs text-[#888]">ID: {session.user?.id}</p>
+                   <p className="font-bold text-[#eaeaea] tracking-tight">{session.user?.name}</p>
+                   <p className="text-[10px] font-mono text-[#444] uppercase tracking-tighter">Verified Player</p>
                  </div>
                </div>
                <div className="flex flex-wrap gap-2 pt-2">
@@ -121,19 +133,19 @@ export default function Home() {
           </section>
 
           <section>
-             <h2 className="text-xl font-semibold mb-6">Environment</h2>
-             <div className="p-6 bg-[#000] border border-[#333] rounded-xl space-y-4">
-               <div className="flex justify-between text-sm">
-                 <span className="text-[#888]">Universe ID</span>
-                 <span className="font-mono text-xs">{process.env.NEXT_PUBLIC_ROGPT_UNIVERSE_ID || "10174033054"}</span>
+             <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444] mb-8 px-1">Experience Details</h2>
+             <div className="glass-card p-8 rounded-2xl space-y-6">
+               <div className="flex justify-between items-center text-[11px]">
+                 <span className="text-[#444] font-bold uppercase tracking-widest">Universe ID</span>
+                 <span className="font-mono text-[#888] bg-[#0a0a0a] px-2 py-0.5 rounded border border-[#111]">{process.env.NEXT_PUBLIC_ROGPT_UNIVERSE_ID || "10174033054"}</span>
                </div>
-               <div className="flex justify-between text-sm">
-                 <span className="text-[#888]">Deployment</span>
-                 <span className="text-white">Production</span>
+               <div className="flex justify-between items-center text-[11px]">
+                 <span className="text-[#444] font-bold uppercase tracking-widest">Link Protocol</span>
+                 <span className="text-[#eaeaea] font-medium uppercase tracking-tighter">Direct Sync</span>
                </div>
-               <div className="flex justify-between text-sm">
-                 <span className="text-[#888]">Region</span>
-                 <span className="text-white">Global</span>
+               <div className="flex justify-between items-center text-[11px]">
+                 <span className="text-[#444] font-bold uppercase tracking-widest">Region</span>
+                 <span className="text-[#eaeaea] font-medium uppercase tracking-tighter">Global Hub</span>
                </div>
              </div>
           </section>

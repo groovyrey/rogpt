@@ -49,16 +49,16 @@ export default function BotPage() {
     }
   };
 
-  if (loading) return <div className="p-24 text-center text-sm text-[#888]">Loading agent settings...</div>;
+  if (loading) return <div className="p-24 text-center text-sm text-slate-500">Loading agent settings...</div>;
 
   return (
     <div className="max-w-screen-xl mx-auto px-6 py-12 space-y-16">
       {/* Agent Settings */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-12">
         <div className="space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#444] mb-2 px-1">Personality Sync</h2>
-          <h3 className="text-3xl font-bold tracking-tighter text-white">NPC Identity</h3>
-          <p className="text-[15px] text-[#666] leading-relaxed max-w-xs">
+          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400 mb-2 px-1">Personality Sync</h2>
+          <h3 className="text-3xl font-bold tracking-tighter text-slate-950">NPC Identity</h3>
+          <p className="text-[15px] text-slate-600 leading-relaxed max-w-xs">
             Personalize your in-game companion's name and behavioral instructions. Changes take effect instantly in your Roblox server.
           </p>
           <div className="pt-4">
@@ -75,7 +75,7 @@ export default function BotPage() {
                 type="text" 
                 value={config.name}
                 onChange={(e) => setConfig({ ...config, name: e.target.value })}
-                className="w-full bg-[#050505] border border-[#222] rounded-xl px-4 py-3 text-sm focus:border-[#444] outline-none transition-all placeholder-[#333]"
+                className="w-full bg-white border border-blue-100 rounded-xl px-4 py-3 text-sm text-slate-900 focus:border-blue-300 focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder-slate-400"
               />
             </Field>
             <Field label="Authorized Owner">
@@ -83,7 +83,7 @@ export default function BotPage() {
                 type="text" 
                 value={config.ownerName}
                 onChange={(e) => setConfig({ ...config, ownerName: e.target.value })}
-                className="w-full bg-[#050505] border border-[#222] rounded-xl px-4 py-3 text-sm focus:border-[#444] outline-none transition-all placeholder-[#333]"
+                className="w-full bg-white border border-blue-100 rounded-xl px-4 py-3 text-sm text-slate-900 focus:border-blue-300 focus:ring-4 focus:ring-blue-100 outline-none transition-all placeholder-slate-400"
               />
             </Field>
           </div>
@@ -91,16 +91,16 @@ export default function BotPage() {
             <textarea 
               value={config.persona}
               onChange={(e) => setConfig({ ...config, persona: e.target.value })}
-              className="w-full h-56 bg-[#050505] border border-[#222] rounded-xl px-4 py-3 text-sm focus:border-[#444] outline-none transition-all resize-none font-mono placeholder-[#333]"
+              className="w-full h-56 bg-white border border-blue-100 rounded-xl px-4 py-3 text-sm text-slate-900 focus:border-blue-300 focus:ring-4 focus:ring-blue-100 outline-none transition-all resize-none font-mono placeholder-slate-400"
               placeholder="Tell your NPC how to act (e.g. 'You are my loyal bodyguard...')"
             />
           </Field>
-          <div className="pt-8 border-t border-[#111] flex items-center justify-between">
+          <div className="pt-8 border-t border-blue-100 flex items-center justify-between">
             <p className={`text-[11px] font-medium tracking-wide ${message.type === 'success' ? 'text-emerald-500' : 'text-rose-500'}`}>{message.text}</p>
             <button 
               onClick={handleSaveBot}
               disabled={saving}
-              className="px-8 py-2.5 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-[#ccc] transition-all disabled:opacity-50 active:scale-95"
+              className="px-8 py-2.5 bg-blue-600 text-white text-xs font-bold uppercase tracking-widest rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50 active:scale-95 shadow-sm shadow-blue-600/20"
             >
               {saving ? "Syncing..." : "Sync to Game"}
             </button>
@@ -114,7 +114,7 @@ export default function BotPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <label className="text-xs font-medium text-[#888] uppercase tracking-wider">{label}</label>
+      <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">{label}</label>
       {children}
     </div>
   );

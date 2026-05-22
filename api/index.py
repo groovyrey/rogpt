@@ -37,54 +37,6 @@ redis = None
 if REDIS_URL and REDIS_TOKEN:
     redis = Redis(url=REDIS_URL, token=REDIS_TOKEN)
 
-# --- Roblox Open Cloud Helper ---
-
-class RobloxOpenCloud:
-    def __init__(self, universe_id: str, api_key: str):
-        self.universe_id = universe_id
-        self.api_key = api_key
-        self.base_url = f"https://apis.roblox.com/datastores/v1/universes/{universe_id}/standard-datastores"
-
-    def get_entry(self, datastore_name: str, key: str, scope: str = "global"):
-        url = f"{self.base_url}/datastore/entries/entry"
-        params = {
-            "datastoreName": datastore_name,
-            "entryKey": key,
-            "scope": scope
-        }
-        headers = {"x-api-key": self.api_key}
-        try:
-            import requests
-            resp = requests.get(url, params=params, headers=headers)
-            if resp.status_code == 200:
-                return resp.json()
-            return None
-        except Exception as e:
-            print(f"Roblox Get Entry Error: {e}")
-            return None
-
-    def set_entry(self, datastore_name: str, key: str, value: Any, scope: str = "global"):
-        url = f"{self.base_url}/datastore/entries/entry"
-        params = {
-            "datastoreName": datastore_name,
-            "entryKey": key,
-            "scope": scope
-        }
-        headers = {
-            "x-api-key": self.api_key,
-            "Content-Type": "application/json"
-        }
-        try:
-            import requests
-            resp = requests.post(url, params=params, headers=headers, json=value)
-            return resp.status_code in [200, 201]
-        except Exception as e:
-            print(f"Roblox Set Entry Error: {e}")
-            return False
-
-ROGPT_UNIVERSE_ID = os.getenv("ROGPT_UNIVERSE_ID")
-roblox_cloud = RobloxOpenCloud(ROGPT_UNIVERSE_ID, ROBLOX_API_KEY) if ROGPT_UNIVERSE_ID else None
-
 # --- Models ---
 
 class Emote(BaseModel):
@@ -467,41 +419,19 @@ async def datastore_endpoint(
     if not redis:
         raise HTTPException(status_code=500, detail="Redis not configured")
 
-    mapping = {
-        "Companion": {"name": "CompanionDataStore", "scope": "Companions"},
-        "Player": {"name": "MainDataStore", "scope": "Players"},
-    }
-
     redis_key = f"datastore:{req.key}"
-    parts = req.key.split("_")
-    prefix = parts[0]
-    raw_id = parts[1] if len(parts) > 1 else ""
-    ds_info = mapping.get(prefix)
 
     if req.action == "sync":
-        # 1. Sync to Redis
+        # Sync to Redis
         redis.set(redis_key, json.dumps(req.value), ex=86400 * 7) # 7 days
-        
-        # 2. Sync to Roblox Open Cloud
-        if ds_info and roblox_cloud:
-            roblox_cloud.set_entry(ds_info["name"], raw_id, req.value, ds_info["scope"])
-        
         return {"success": True, "message": "Data synced"}
 
     if req.action == "fetch":
-        # 1. Try Redis first
+        # Try Redis
         data = redis.get(redis_key)
         if data:
             if isinstance(data, str): data = json.loads(data)
             return {"success": True, "value": data}
-        
-        # 2. Fallback to Roblox Open Cloud
-        if ds_info and roblox_cloud:
-            data = roblox_cloud.get_entry(ds_info["name"], raw_id, ds_info["scope"])
-            if data:
-                # Cache it in Redis
-                redis.set(redis_key, json.dumps(data), ex=86400 * 7)
-                return {"success": True, "value": data}
         
         return {"success": True, "value": None}
 

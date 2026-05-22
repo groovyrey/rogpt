@@ -325,14 +325,27 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
         raise HTTPException(status_code=500, detail=str(e))
 
     # Clean up output
-    # Thoughts extraction (Gemini 2.0 Flash Thinking puts thoughts in a specific part if enabled, 
-    # but here we look for tags)
-    thought_match = re.search(r'<(?:thought|think|reasoning)>([\s\S]*?)(?:<\/(?:thought|think|reasoning)>|$)', full_text, re.IGNORECASE)
-    if thought_match:
-        extracted_thoughts = thought_match.group(1).strip()
+    # Thoughts extraction
+    extracted_thoughts = ""
     
-    clean_text = re.sub(r'<(?:thought|think|reasoning)>[\s\S]*?(?:<\/(?:thought|think|reasoning)>|$)', '', full_text, flags=re.IGNORECASE).strip()
-    clean_text = re.sub(r'<\|[\s\S]*?\|>', '', clean_text).strip()
+    # Try multiple patterns for thoughts
+    t_match = re.search(r'<\|channel>thought([\s\S]*?)(?:<channel\|>|$)', full_text, re.IGNORECASE)
+    if not t_match:
+        t_match = re.search(r'<(?:thought|think|reasoning)>([\s\S]*?)(?:<\/(?:thought|think|reasoning)>|$)', full_text, re.IGNORECASE)
+    
+    if t_match:
+        extracted_thoughts = t_match.group(1).strip()
+    
+    # Comprehensive cleaning (matching original route.ts logic)
+    clean_text = re.sub(r'<\|channel>thought[\s\S]*?(?:<channel\|>|$)', '', full_text, flags=re.IGNORECASE)
+    clean_text = re.sub(r'<(?:thought|think|reasoning)>[\s\S]*?(?:<\/(?:thought|think|reasoning)>|$)', '', clean_text, flags=re.IGNORECASE)
+    clean_text = re.sub(r'<\|channel>[\s\S]*?(?:<channel\|>|$)', '', clean_text, flags=re.IGNORECASE)
+    clean_text = re.sub(r'<\|[\s\S]*?\|>', '', clean_text)
+    clean_text = clean_text.strip()
+
+    # If everything was stripped, fallback to the original trimmed text
+    if not clean_text and full_text:
+        clean_text = full_text.strip()
 
     # Fallback text
     if not clean_text and client_tool_calls:

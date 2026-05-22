@@ -223,6 +223,10 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
         "temperature": 0.9,
         "top_p": 0.95,
         "max_output_tokens": 256,
+        "thinking_config": {
+            "include_thoughts": True,
+            "thinking_level": "MINIMAL" if req.minimal else "MEDIUM"
+        }
     }
 
     model = genai.GenerativeModel(
@@ -270,7 +274,9 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
             # Extract text and thoughts
             if hasattr(response, 'candidates') and response.candidates:
                 for part in response.candidates[0].content.parts:
-                    if part.text:
+                    if hasattr(part, 'thought') and part.thought:
+                        extracted_thoughts += (part.text or part.thought)
+                    elif part.text:
                         full_text += part.text
             
             # Process function calls

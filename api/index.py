@@ -266,18 +266,46 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
             )
         )
 
-        model_name = "gemma-4-31b-it"
+        primary_model_name = "gemma-4-31b-it"
+        fallback_model_name = "gemma-4-26b-a4b-it"
+        current_model_name = primary_model_name
         
+        retry_count = 0
+        MAX_RETRIES = 3
+        INITIAL_RETRY_DELAY = 1.0 # seconds
+        response = None
+
+        while retry_count <= MAX_RETRIES:
+            try:
+                response = client.models.generate_content(
+                    model=current_model_name,
+                    contents=contents,
+                    config=config
+                )
+                break # Success
+            except Exception as e:
+                retry_count += 1
+                if current_model_name == primary_model_name:
+                    print(f"Primary model {primary_model_name} failed. Switching to fallback {fallback_model_name}. Error: {e}")
+                    current_model_name = fallback_model_name
+                
+                if retry_count > MAX_RETRIES:
+                    print(f"AI Generation Error (Max Retries Exceeded): {e}")
+                    raise HTTPException(status_code=500, detail=f"AI service failed after {MAX_RETRIES} retries: {str(e)}")
+                
+                delay = INITIAL_RETRY_DELAY * (2 ** (retry_count - 1))
+                print(f"AI Generation Error (Attempt {retry_count}): {e}. Retrying in {delay}s...")
+                time.sleep(delay)
+
+        if not response:
+             raise HTTPException(status_code=500, detail="No response received from AI model")
+
+        # Tool execution loop
         loop_count = 0
         MAX_TOOL_LOOPS = 3
         
         while loop_count < MAX_TOOL_LOOPS:
             loop_count += 1
-            response = client.models.generate_content(
-                model=model_name,
-                contents=contents,
-                config=config
-            )
             
             model_content = response.candidates[0].content
             contents.append(model_content)
@@ -322,6 +350,11 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
                     tool_responses.append(types.Part(function_response=types.FunctionResponse(name=name, response={"players": players})))
 
             if tool_responses:
+                response = client.models.generate_content(
+                    model=current_model_name,
+                    contents=contents + [types.Content(role="user", parts=tool_responses)],
+                    config=config
+                )
                 contents.append(types.Content(role="user", parts=tool_responses))
             else:
                 break

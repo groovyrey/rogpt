@@ -271,8 +271,8 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
             )
         )
 
-        primary_model_name = "gemma-4-31b-it"
-        fallback_model_name = "gemma-4-26b-a4b-it"
+        primary_model_name = "gemma-4-26b-a4b-it"
+        fallback_model_name = "gemma-4-31b-it"
         current_model_name = primary_model_name
         
         retry_count = 0

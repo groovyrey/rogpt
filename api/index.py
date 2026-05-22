@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException, Header, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-from google import genai
+import google.genai as genai
 from google.genai import types
 from upstash_redis import Redis
 

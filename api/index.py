@@ -7,7 +7,8 @@ from fastapi import FastAPI, HTTPException, Header, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from upstash_redis import Redis
 
 # Load environment variables
@@ -28,8 +29,8 @@ REDIS_TOKEN = os.getenv("UPSTASH_REDIS_REST_TOKEN")
 if not GEMINI_API_KEY:
     print("WARNING: GEMINI_API_KEY is not set.")
 
-# Initialize Gemini
-genai.configure(api_key=GEMINI_API_KEY)
+# Initialize Gemini Client
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 # Initialize Redis
 redis = None
@@ -60,58 +61,38 @@ class GemmaRequest(BaseModel):
     minimal: bool = True
     history: Optional[List[Dict[str, Any]]] = None
 
-# --- Tool Definitions ---
-
-def save_memory(memory: str):
-    """
-    Save a persistent memory or fact about the player to their DataStore for long-term recall.
-    """
-    # This is handled in the execution loop to interact with Redis
-    return {"status": "request_received"}
-
-def play_emote(emoteId: str):
-    """
-    Play a specific animation or emote on the NPC character.
-    """
-    return {"status": "request_received"}
-
-def get_player_info():
-    """
-    Get detailed information about all players currently in the server.
-    """
-    return {"status": "request_received"}
-
-def give_tool(toolName: str):
-    """
-    Give a specific tool or item to the player from the server's storage.
-    """
-    return {"status": "request_received"}
-
 # --- Helper Functions ---
 
-def sanitize_history(history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+def sanitize_history(history: List[Dict[str, Any]]) -> List[types.Content]:
     sanitized = []
     for m in history:
         if not isinstance(m, dict) or "role" not in m or "parts" not in m:
             continue
         
+        role = "user" if m["role"] == "user" else "model"
         parts = []
         for p in m["parts"]:
-            if isinstance(p, dict) and "text" in p:
-                text = p["text"]
-                # Remove thought tags
-                text = re.sub(r'<\|channel>thought[\s\S]*?(?:<channel\|>|$)', '', text, flags=re.IGNORECASE)
-                text = re.sub(r'<(?:thought|think|reasoning)>[\s\S]*?(?:<\/(?:thought|think|reasoning)>|$)', '', text, flags=re.IGNORECASE)
-                text = re.sub(r'<\|channel>[\s\S]*?(?:<channel\|>|$)', '', text, flags=re.IGNORECASE)
-                text = re.sub(r'<\|[\s\S]*?\|>', '', text)
-                parts.append({"text": text.strip()})
-            else:
-                parts.append(p)
-        
-        sanitized.append({"role": m["role"], "parts": parts})
+            if isinstance(p, dict):
+                if "text" in p:
+                    text = p["text"]
+                    # Remove thought tags
+                    text = re.sub(r'<\|channel>thought[\s\S]*?(?:<channel\|>|$)', '', text, flags=re.IGNORECASE)
+                    text = re.sub(r'<(?:thought|think|reasoning)>[\s\S]*?(?:<\/(?:thought|think|reasoning)>|$)', '', text, flags=re.IGNORECASE)
+                    text = re.sub(r'<\|channel>[\s\S]*?(?:<channel\|>|$)', '', text, flags=re.IGNORECASE)
+                    text = re.sub(r'<\|[\s\S]*?\|>', '', text)
+                    parts.append(types.Part(text=text.strip()))
+                elif "functionCall" in p:
+                    fc = p["functionCall"]
+                    parts.append(types.Part(function_call=types.FunctionCall(name=fc["name"], args=fc["args"])))
+                elif "functionResponse" in p:
+                    fr = p["functionResponse"]
+                    parts.append(types.Part(function_response=types.FunctionResponse(name=fr["name"], response=fr["response"])))
+            
+        if parts:
+            sanitized.append(types.Content(role=role, parts=parts))
     
     # Ensure starts with user
-    while sanitized and sanitized[0]["role"] != "user":
+    while sanitized and sanitized[0].role != "user":
         sanitized.pop(0)
     
     return sanitized
@@ -141,7 +122,6 @@ async def gemma_endpoint(
     # Auth Check
     is_authorized = (authorization == f"Bearer {ROBLOX_API_KEY}")
     if not is_authorized:
-        # Note: In Next.js it also checked for session, but here we expect Bearer token for Roblox
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     prompt = req.prompt
@@ -159,16 +139,14 @@ async def gemma_endpoint(
     # Redis Data Fetching
     if user_id and redis:
         try:
-            # Companion Config
             saved_config = redis.get(f"companion_config:{user_id}")
             if saved_config:
                 if isinstance(saved_config, str): saved_config = json.loads(saved_config)
                 if saved_config.get("name"): companion_name = saved_config["name"]
                 if saved_config.get("ownerName"): owner_name = saved_config["ownerName"]
                 if saved_config.get("persona"): 
-                    custom_persona = f"\nCUSTOM INSTRUCTIONS:\n{saved_config['persona']}\n"
+                    custom_persona = f"\\nCUSTOM INSTRUCTIONS:\\n{saved_config['persona']}\\n"
             
-            # Player Memories
             stored_player_data = redis.get(f"player_data:{user_id}")
             if stored_player_data:
                 if isinstance(stored_player_data, str): stored_player_data = json.loads(stored_player_data)
@@ -176,24 +154,23 @@ async def gemma_endpoint(
         except Exception as e:
             print(f"Redis Error: {e}")
 
-    # Build Context
-    memories_context = f"\nPLAYER MEMORIES:\n" + "\n".join(player_memories) if player_memories else ""
+    memories_context = f"\\nPLAYER MEMORIES:\\n" + "\\n".join(player_memories) if player_memories else ""
     environment_context = ""
     emotes_context = ""
     tools_context = ""
     
     if req.gameState:
         gs = req.gameState
-        environment_context = "\nCURRENT GAME STATE:\n"
-        if gs.playerCount is not None: environment_context += f"- Total Players: {gs.playerCount}\n"
-        if gs.location: environment_context += f"- Current Location: {gs.location}\n"
-        if gs.timeOfDay: environment_context += f"- Time of Day: {gs.timeOfDay}\n"
+        environment_context = "\\nCURRENT GAME STATE:\\n"
+        if gs.playerCount is not None: environment_context += f"- Total Players: {gs.playerCount}\\n"
+        if gs.location: environment_context += f"- Current Location: {gs.location}\\n"
+        if gs.timeOfDay: environment_context += f"- Time of Day: {gs.timeOfDay}\\n"
         
         if gs.availableEmotes:
-            emotes_context = "\nAVAILABLE EMOTES:\n" + "\n".join([f"{e.name}: {e.id}" for e in gs.availableEmotes])
+            emotes_context = "\\nAVAILABLE EMOTES:\\n" + "\\n".join([f"{e.name}: {e.id}" for e in gs.availableEmotes])
         
         if gs.availableTools:
-            tools_context = "\nAVAILABLE TOOLS (You can give these to the player):\n" + ", ".join(gs.availableTools)
+            tools_context = "\\nAVAILABLE TOOLS (You can give these to the player):\\n" + ", ".join(gs.availableTools)
 
     name_context = f" Your name is {companion_name}." if companion_name else ""
     owner_context = f" Your owner is a Roblox player named {owner_name}. You should be loyal and helpful to them." if owner_name else ""
@@ -215,31 +192,51 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
 - Keep responses brief (1-3 sentences).
 - Use get_player_info if you need to know what other players are doing or their health status.{environment_context}{memories_context}{emotes_context}{tools_context}"""
 
-    # Model Setup
-    model_name = "gemma-4-31b-it"
-    fallback_model_name = "gemma-4-26b-a4b-it"
-    
-    generation_config = {
-        "temperature": 0.9,
-        "top_p": 0.95,
-        "max_output_tokens": 256,
-        "thinking_config": {
-            "include_thoughts": True,
-            "thinking_level": "MINIMAL" if req.minimal else "MEDIUM"
-        }
-    }
+    tools = [
+        types.Tool(function_declarations=[
+            types.FunctionDeclaration(
+                name="save_memory",
+                description="Save a persistent memory or fact about the player to their DataStore for long-term recall.",
+                parameters={
+                    "type": "OBJECT",
+                    "properties": {
+                        "memory": {"type": "STRING", "description": "The fact or information to remember."}
+                    },
+                    "required": ["memory"]
+                }
+            ),
+            types.FunctionDeclaration(
+                name="play_emote",
+                description="Play a specific animation or emote on the NPC character.",
+                parameters={
+                    "type": "OBJECT",
+                    "properties": {
+                        "emoteId": {"type": "STRING", "description": "The Roblox asset ID of the emote."}
+                    },
+                    "required": ["emoteId"]
+                }
+            ),
+            types.FunctionDeclaration(
+                name="get_player_info",
+                description="Get detailed information about all players currently in the server.",
+                parameters={"type": "OBJECT", "properties": {}}
+            ),
+            types.FunctionDeclaration(
+                name="give_tool",
+                description="Give a specific tool or item to the player from the server's storage.",
+                parameters={
+                    "type": "OBJECT",
+                    "properties": {
+                        "toolName": {"type": "STRING", "description": "The exact name of the tool."}
+                    },
+                    "required": ["toolName"]
+                }
+            )
+        ])
+    ]
 
-    model = genai.GenerativeModel(
-        model_name=model_name,
-        system_instruction=system_instruction,
-        generation_config=generation_config,
-        tools=[save_memory, play_emote, get_player_info, give_tool]
-    )
-
-    # History Management
-    session_key = f"chat_session:user_{user_id}" if user_id else f"chat_session:{session_id}"
-    
     history = req.history or []
+    session_key = f"chat_session:user_{user_id}" if user_id else f"chat_session:{session_id}"
     if not history and redis:
         try:
             stored_history = redis.get(session_key)
@@ -249,38 +246,49 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
         except Exception as e:
             print(f"Redis History Error: {e}")
 
-    sanitized_history = sanitize_history(history)
-    
-    # Generate Content
-    chat = model.start_chat(history=sanitized_history)
+    contents = sanitize_history(history)
+    contents.append(types.Content(role="user", parts=[types.Part(text=prompt)]))
     
     full_text = ""
     extracted_thoughts = ""
     client_tool_calls = []
     
     try:
-        response = chat.send_message(prompt)
-        
-        # Tool execution loop (FastAPI/Python SDK handles this differently, but we can process the response)
-        # The Python SDK can automatically handle tool calling if we use a helper, 
-        # but here we follow the user's manual loop logic for specific side effects (Redis).
+        config = types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            tools=tools,
+            temperature=0.9,
+            top_p=0.95,
+            max_output_tokens=256,
+            thinking_config=types.ThinkingConfig(
+                include_thoughts=True,
+                thinking_level="MINIMAL" if req.minimal else "MEDIUM"
+            )
+        )
+
+        model_name = "gemma-4-31b-it"
         
         loop_count = 0
         MAX_TOOL_LOOPS = 3
         
         while loop_count < MAX_TOOL_LOOPS:
             loop_count += 1
+            response = client.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=config
+            )
             
-            # Extract text and thoughts
-            if hasattr(response, 'candidates') and response.candidates:
-                for part in response.candidates[0].content.parts:
-                    if hasattr(part, 'thought') and part.thought:
-                        extracted_thoughts += (part.text or part.thought)
-                    elif part.text:
-                        full_text += part.text
-            
-            # Process function calls
-            function_calls = [p.function_call for p in response.candidates[0].content.parts if p.function_call]
+            model_content = response.candidates[0].content
+            contents.append(model_content)
+
+            for part in model_content.parts:
+                if part.thought:
+                    extracted_thoughts += part.text or ""
+                elif part.text:
+                    full_text += part.text
+
+            function_calls = [part.function_call for part in model_content.parts if part.function_call]
             if not function_calls:
                 break
                 
@@ -291,7 +299,6 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
                 
                 if name == "save_memory":
                     memory = args.get("memory", "")
-                    print(f"Saving memory: {memory}")
                     is_duplicate = any(m.lower().strip() == memory.lower().strip() for m in player_memories)
                     if not is_duplicate and user_id and redis:
                         player_memories.append(memory)
@@ -300,81 +307,52 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
                         res_content = "Memory successfully saved."
                     else:
                         res_content = "Memory already known."
-                    tool_responses.append({"name": name, "response": {"content": res_content}})
+                    tool_responses.append(types.Part(function_response=types.FunctionResponse(name=name, response={"content": res_content})))
                 
                 elif name == "play_emote":
-                    emote_id = args.get("emoteId", "")
                     client_tool_calls.append({"name": name, "args": args})
-                    tool_responses.append({"name": name, "response": {"content": "Emote triggered successfully."}})
+                    tool_responses.append(types.Part(function_response=types.FunctionResponse(name=name, response={"content": "Emote triggered successfully."})))
                 
                 elif name == "give_tool":
-                    tool_name = args.get("toolName", "")
                     client_tool_calls.append({"name": name, "args": args})
-                    tool_responses.append({"name": name, "response": {"content": f"Tool '{tool_name}' requested."}})
+                    tool_responses.append(types.Part(function_response=types.FunctionResponse(name=name, response={"content": f"Tool '{args.get('toolName')}' requested."})))
                 
                 elif name == "get_player_info":
                     players = req.gameState.players if req.gameState else []
-                    tool_responses.append({"name": name, "response": {"players": players}})
+                    tool_responses.append(types.Part(function_response=types.FunctionResponse(name=name, response={"players": players})))
 
-            # Send tool responses back
-            response = chat.send_message([
-                genai.protos.Part(
-                    function_response=genai.protos.FunctionResponse(
-                        name=r["name"],
-                        response=r["response"]
-                    )
-                ) for r in tool_responses
-            ])
+            if tool_responses:
+                contents.append(types.Content(role="user", parts=tool_responses))
+            else:
+                break
 
     except Exception as e:
         print(f"AI Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-    # Clean up output
-    # Thoughts extraction
-    extracted_thoughts = ""
-    
-    # Try multiple patterns for thoughts
-    t_match = re.search(r'<\|channel>thought([\s\S]*?)(?:<channel\|>|$)', full_text, re.IGNORECASE)
-    if not t_match:
-        t_match = re.search(r'<(?:thought|think|reasoning)>([\s\S]*?)(?:<\/(?:thought|think|reasoning)>|$)', full_text, re.IGNORECASE)
-    
-    if t_match:
-        extracted_thoughts = t_match.group(1).strip()
-    
-    # Comprehensive cleaning (matching original route.ts logic)
-    clean_text = re.sub(r'<\|channel>thought[\s\S]*?(?:<channel\|>|$)', '', full_text, flags=re.IGNORECASE)
+    clean_text = full_text.strip()
+    # Secondary cleaning for safety
+    clean_text = re.sub(r'<\|channel>thought[\s\S]*?(?:<channel\|>|$)', '', clean_text, flags=re.IGNORECASE)
     clean_text = re.sub(r'<(?:thought|think|reasoning)>[\s\S]*?(?:<\/(?:thought|think|reasoning)>|$)', '', clean_text, flags=re.IGNORECASE)
     clean_text = re.sub(r'<\|channel>[\s\S]*?(?:<channel\|>|$)', '', clean_text, flags=re.IGNORECASE)
     clean_text = re.sub(r'<\|[\s\S]*?\|>', '', clean_text)
     clean_text = clean_text.strip()
 
-    # If everything was stripped, fallback to the original trimmed text
-    if not clean_text and full_text:
-        clean_text = full_text.strip()
-
-    # Fallback text
     if not clean_text and client_tool_calls:
         clean_text = "Alright, I've handled that for you."
 
-    # Save History to Redis
     if redis:
         try:
-            # chat.history contains the full conversation
-            # Convert to list of dicts for JSON serialization
             serializable_history = []
-            for m in chat.history:
+            for m in contents:
                 parts = []
                 for p in m.parts:
                     if p.text: parts.append({"text": p.text})
-                    elif p.function_call: 
-                        parts.append({"functionCall": {"name": p.function_call.name, "args": dict(p.function_call.args)}})
-                    elif p.function_response:
-                        parts.append({"functionResponse": {"name": p.function_response.name, "response": dict(p.function_response.response)}})
+                    elif p.function_call: parts.append({"functionCall": {"name": p.function_call.name, "args": p.function_call.args}})
+                    elif p.function_response: parts.append({"functionResponse": {"name": p.function_response.name, "response": p.function_response.response}})
                 serializable_history.append({"role": m.role, "parts": parts})
             
-            # Limit history length
-            if len(serializable_history) > 20: # 10 turns
+            if len(serializable_history) > 20:
                 serializable_history = serializable_history[-20:]
                 while serializable_history and serializable_history[0]["role"] != "user":
                     serializable_history.pop(0)

@@ -329,7 +329,7 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
                     return {
                         "success": True,
                         "text": "I'm a bit lost in thought right now... let's talk in a moment!",
-                        "thoughts": f"AI service failed: {str(e)}",
+                        "thoughts": f"AI service failed after {MAX_RETRIES} retries. Last model: {current_model_name}. Error: {str(e)}",
                         "toolCalls": []
                     }
                 
@@ -443,7 +443,7 @@ You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
     return {
         "success": True,
         "text": clean_text,
-        "thoughts": extracted_thoughts,
+        "thoughts": f"[Model: {current_model_name}] {extracted_thoughts}",
         "toolCalls": client_tool_calls
     }
 

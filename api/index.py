@@ -179,7 +179,7 @@ async def gemma_endpoint(
                 if saved_config.get("name"): companion_name = saved_config["name"]
                 if saved_config.get("ownerName"): owner_name = saved_config["ownerName"]
                 if saved_config.get("persona"): 
-                    custom_persona = f"\\nCUSTOM INSTRUCTIONS:\\n{saved_config['persona']}\\n"
+                    custom_persona = f"\nCUSTOM INSTRUCTIONS:\n{saved_config['persona']}\n"
             
             stored_player_data = await redis.get(f"player_data:{user_id}")
             if stored_player_data:
@@ -188,43 +188,43 @@ async def gemma_endpoint(
         except Exception as e:
             print(f"Redis Error: {e}")
 
-    memories_context = f"\\nPLAYER MEMORIES:\\n" + "\\n".join(player_memories) if player_memories else ""
+    memories_context = f"\nPLAYER MEMORIES:\n" + "\n".join(player_memories) if player_memories else ""
     environment_context = ""
     emotes_context = ""
     tools_context = ""
     
     if req.gameState:
         gs = req.gameState
-        environment_context = "\\nCURRENT GAME STATE:\\n"
-        if gs.playerCount is not None: environment_context += f"- Total Players: {gs.playerCount}\\n"
-        if gs.location: environment_context += f"- Current Location: {gs.location}\\n"
-        if gs.timeOfDay: environment_context += f"- Time of Day: {gs.timeOfDay}\\n"
+        environment_context = "\nCURRENT GAME STATE:\n"
+        if gs.playerCount is not None: environment_context += f"- Total Players: {gs.playerCount}\n"
+        if gs.location: environment_context += f"- Current Location: {gs.location}\n"
+        if gs.timeOfDay: environment_context += f"- Time of Day: {gs.timeOfDay}\n"
         
         if gs.availableEmotes:
-            emotes_context = "\\nAVAILABLE EMOTES:\\n" + "\\n".join([f"{e.name}: {e.id}" for e in gs.availableEmotes])
+            emotes_context = "\nAVAILABLE EMOTES:\n" + "\n".join([f"{e.name}: {e.id}" for e in gs.availableEmotes])
         
         if gs.availableTools:
-            tools_context = "\\nAVAILABLE TOOLS (You can give these to the player):\\n" + ", ".join(gs.availableTools)
+            tools_context = "\nAVAILABLE TOOLS (You can give these to the player):\n" + ", ".join(gs.availableTools)
 
     name_context = f" Your name is {companion_name}." if companion_name else ""
     owner_context = f" Your owner is a Roblox player named {owner_name}. You should be loyal and helpful to them." if owner_name else ""
 
     system_instruction = f"""<|think|>
-STRICT REASONING PROTOCOL:
-1. Use the thought channel for brief internal logic.
-2. Final answer MUST be CONCISE, PLAIN TEXT, and no Markdown.
+REASONING PROTOCOL:
+- Use the thought channel for internal logic.
+- Final answer must be plain text dialogue.
+- Be concise and friendly.
 
 PERSONA:
 You are an intelligent Roblox NPC.{name_context}{owner_context}{custom_persona}
-- ALWAYS provide a NEW, UNIQUE text response for every prompt.
-- Acknowledge the player's latest message specifically.
-- MANDATORY: If the player tells you a new fact about themselves (like a nickname, preference, or goal), you MUST use the 'save_memory' tool immediately.
-- If the player asks for an item or tool, use the 'give_tool' function with the requested tool name.
-- If 'PLAYER MEMORIES' contains a preferred name or nickname, use that instead of the 'ownerName' (Roblox username).
-- If you use a tool (like play_emote or save_memory), describe your action or respond to the player while doing it.
-- NEVER repeat previous information unless specifically asked.
+- Provide a unique text response for every prompt.
+- Acknowledge the player's latest message.
+- If the player tells you a new fact about themselves, use the 'save_memory' tool.
+- If the player asks for an item or tool, use the 'give_tool' function.
+- If 'PLAYER MEMORIES' contains a nickname, use it.
+- Never repeat previous information unless asked.
 - Keep responses brief (1-3 sentences).
-- Use get_player_info if you need to know what other players are doing or their health status.{environment_context}{memories_context}{emotes_context}{tools_context}"""
+- Use get_player_info if needed.{environment_context}{memories_context}{emotes_context}{tools_context}"""
 
     tools = [
         types.Tool(function_declarations=[
